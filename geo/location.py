@@ -84,8 +84,14 @@ def add_coords(query, coords):
 def lookup_coords(query):
     temp9 = geohash
     for letter in query.lower():
-        temp9 = temp9.get(letter)
-    return temp9['coords']
+        if letter in temp9:
+            temp9 = temp9.get(letter)
+        else:
+            return False
+    if 'coords' in temp9:
+        return temp9['coords']
+    else:
+        return False
 
 
 def lookup_closest(query):
@@ -128,7 +134,7 @@ def locate(address):
         if temp['status'] == u'OK':
             geocache.update({query: (temp['results'], time.ctime(time.time()))})
             f = open("geocache.txt", "wb")
-            ujson.dump(geocache, f)
+            ujson.dump(geocache, f, ensure_ascii=False)
             f.close()
             hashq(query)
             coordlist = []
@@ -142,10 +148,10 @@ def locate(address):
                             temp3['country'].append([z['short_name'], z['long_name']])
             add_coords(query, coordlist)
             f = open("geogrid2.txt", "wb")
-            ujson.dump(geogrid, f)
+            ujson.dump(geogrid, f, ensure_ascii=False)
             f.close()
             f = open("geohash.txt", "wb")
-            ujson.dump(geohash, f)
+            ujson.dump(geohash, f, ensure_ascii=False)
             f.close()
         else:
             return temp
@@ -160,5 +166,6 @@ print locate(["LONDON", "liverpool", "street"])
 print locate(['manchester'])
 print locate(['manchester', "bank"])
 print locate(["cismigiu","bucuresti"])
+print locate(["liverpool"])
 
 print lookup_closest('saint petersburg')

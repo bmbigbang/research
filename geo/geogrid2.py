@@ -91,7 +91,7 @@ for x in grid:
         break
 print counter
 f = open("geogrid2.txt", "wb")
-ujson.dump(geohash, f)
+ujson.dump(geohash, f, ensure_ascii=False)
 f.close()
 
 
