@@ -97,7 +97,7 @@ def lookup_coords(query):
 def lookup_closest(query):
     temp10 = geohash
     counter = 0
-    for char in query:
+    for char in query.lower():
         if char in temp10:
             temp10 = temp10.get(char)
         elif len(temp10) == 1 and 'coords' not in temp10:
@@ -168,4 +168,4 @@ print locate(['manchester', "bank"])
 print locate(["cismigiu","bucuresti"])
 print locate(["liverpool"])
 
-print lookup_closest('saint petersburg')
+print lookup_closest('Londn')

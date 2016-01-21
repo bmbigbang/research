@@ -29,7 +29,7 @@ def closest(vec, nest):
 def lookup_closest(query):
     temp10 = geohash
     counter = 0
-    for char in query:
+    for char in query.lower():
         if char in temp10:
             temp10 = temp10.get(char)
         elif len(temp10) == 1 and 'coords' not in temp10:
