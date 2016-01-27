@@ -66,7 +66,7 @@ def checkletters(text):
                 else:
                     res3[lang] = (res2[charset]/len(text))*(float(langs[lang][charset])/tot)
     res3 = sorted(res3.items(), key=operator.itemgetter(1), reverse=True)
-    return [[i[0],i[1]] for i in res3]
+    return [[i[0], i[1]] for i in res3]
 
 def checklangs(text):
     res = checkletters(text)
@@ -108,4 +108,6 @@ def checklangs(text):
 # print checklangs(text8)
 # text9 = "मेरी चाबियां खो गई हैं" ## hindi
 # print checklangs(text9)
+# test10 = """ ٠١٢٣٤٥مرحبا انا  البشري"""
+# print checkletters(test10)
 

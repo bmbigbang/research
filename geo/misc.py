@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import operator
 from math import sqrt
 
@@ -61,5 +62,21 @@ def repeat(nest, args):
                     args2.append(y)
             coords += repeat(temp1, args2)
     return coords
+
+
+def getlastnest(nest):
+    letters = ""
+    for x in nest:
+        if unicode("*|") in nest[x]:
+            letters += x
+            return letters
+        temp = nest.get(x)
+        if not temp:
+            continue
+        for y in temp:
+            if unicode("*|") in temp[y]:
+                letters += x+y
+                return letters
+    return False
 
 

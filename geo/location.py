@@ -1,22 +1,31 @@
 # -*- coding: utf-8 -*-
 
 import ujson
-from misc import pop_dec, params, closest, repeat
-from math import sqrt
+from misc import params
+from tests import postcode, cities
+import pymongo
 import pycurl
 import urllib
 import cStringIO
 import time
+import re
 
-f = open("geocache.txt", "rb")
-geocache = ujson.load(f)
-f.close()
-f = open("geohash.txt", "rb")
-geohash = ujson.load(f)
-f.close()
-f = open("geogrid2.txt", "rb")
-geogrid = ujson.load(f)
-f.close()
+client = pymongo.MongoClient()
+geocache = client['test-geocache']
+geohash = client['test-geohash']
+geohashp = client['test-geohashp']
+geohashc = client['test-geohashc']
+geogrid = client['test-geogrid']
+
+# f = open("geocache.txt", "rb")
+# geocache = ujson.load(f)
+# f.close()
+# f = open("geohash.txt", "rb")
+# geohash = ujson.load(f)
+# f.close()
+# f = open("geogrid2.txt", "rb")
+# geogrid = ujson.load(f)
+# f.close()
 
 
 def get_geo(prms):
@@ -34,138 +43,229 @@ def get_geo(prms):
 
 
 def fetch(crds):
-    p = (int(crds[0]) / 10, int(crds[1]) / 10)
-    if str(p) not in geogrid:
-        vec = sqrt(p[0]**2 + p[1]**2)
-        temp4 = geogrid[closest(vec, geogrid)]
-    else:
-        temp4 = geogrid[str(p)]
-    p = (int(crds[0]) % 10, int(crds[1]) % 10)
-    if str(p) not in temp4:
-        vec = sqrt(p[0]**2 + p[1]**2)
-        temp4 = temp4[closest(vec, temp4)]
-    else:
-        temp4 = temp4[str(p)]
-    temp5 = pop_dec(crds)
-    for z in temp5:
-        if str(z) in temp4:
-            temp4 = temp4.get(str(z))
-        elif u'query' in temp4:
-            return temp4
-        else:
-            vec = sqrt((z[0]**2)+(z[1]**2))
-            temp4 = temp4.get(closest(vec, temp4))
-    return temp4
+    return geogrid.places.find_one({"coords": {"$near": crds}})
 
 
-def hashq(query):
+def updategrid(crds, country, query):
+    s = geogrid.places.find_one({"coords": {"$near": crds}})[u'_id']
+    geogrid.places.update_one(
+        {u"_id": s},
+        {
+            "$set": {
+                "country": country,
+                "query": query
+            }
+        }
+    )
+
+
+def updatecache(query, results):
+    entry = {'query': query,
+             'results': results,
+             'updated': time.ctime(time.time())}
+    geocache.posts.insert_one(entry)
+
+
+def hashq(query, findpost, findcities):
+    if findpost:
+        temp6 = geohashp
+        for x in findpost + findcities:
+            query = re.sub(ur"{0}".format(x), u"", query, flags=re.U)
+        query = re.sub(ur"  ", u" ", query, flags=re.U).strip()
+        if not temp6.posts.find_one({u"query": findpost[0]}):
+            temp6.posts.insert_one({u"query": findpost[0], u"nest": {}})
+        temp6 = temp6.posts.find_one({u"query": findpost[0]})
+        temp7 = temp6.get(u"nest")
+        for x in (findpost + findcities)[1:]:
+            if x not in temp7:
+                temp7[x] = {}
+            temp7 = temp7.get(x)
+        for char in query:
+            if char not in temp7:
+                temp7[char] = {}
+            temp7 = temp7.get(char)
+        geohashp.posts.update_one({u"_id": temp6[u"_id"]},
+                                  {"$set": {u"nest": temp6.get(u"nest")}})
+        return [findpost, findcities, [i for i in query]]
+    if findcities:
+        temp6 = geohashc
+        for x in findcities:
+            query = re.sub(ur"{0}".format(x), u"", query, flags=re.U)
+        query = re.sub(ur"  ", u" ", query, flags=re.U).strip()
+        if not temp6.posts.find_one({u"query": findcities[0]}):
+            temp6.posts.insert_one({u"query": findcities[0], u"nest": {}})
+        temp6 = temp6.posts.find_one({u"query": findcities[0]})
+        temp7 = temp6.get(u"nest")
+        for x in findcities[1:]:
+            if x not in temp7:
+                temp7[x] = {}
+            temp7 = temp7.get(x)
+        for char in query:
+            if char not in temp7:
+                temp7[char] = {}
+            temp7 = temp7.get(char)
+        geohashc.posts.update_one({u"_id": temp6[u"_id"]},
+                                  {"$set": {u"nest": temp6.get(u"nest")}})
+        return [findcities, [i for i in query]]
     temp6 = geohash
-    for char in query.lower():
-        if char in temp6:
-            temp6 = temp6.get(char)
+    if not temp6.posts.find_one({u"query": query[0]}):
+        temp6.posts.insert_one({u"query": query[0], u"nest": {}})
+    temp6 = temp6.posts.find_one({u"query": query[0]})
+    temp7 = temp6.get(u"nest")
+    for char in query[1:]:
+        if char not in temp7:
+            temp7[char] = {}
+        temp7 = temp7.get(char)
+    geohash.posts.update_one({u"_id": temp6[u"_id"]},
+                             {"$set": {u"nest": temp6.get(u"nest")}})
+    return [[i for i in query]]
+
+
+def rearrange(query):
+    query = query.lower()
+    findpost = postcode(query)
+    if findpost:
+        for x in findpost:
+            query = re.sub(ur"{0}".format(x), u"", query, flags=re.U).strip()
+            query = re.sub(ur"  ", u" ", query, flags=re.U)
+    findcities = [i[0] for i in cities(query) if i[2] <= 2]
+    if findcities:
+        for x in findcities:
+            query = re.sub(ur"{0}".format(x), u"", query, flags=re.U).strip()
+            query = re.sub(ur"  ", u" ", query, flags=re.U)
+        if findpost:
+            query = " ".join(findpost) + " " + " ".join(findcities) + " " + query
         else:
-            temp6[char] = {}
-            temp6 = temp6.get(char)
+            query = " ".join(findcities) + " " + query
+    elif findpost:
+        query = " ".join(findpost) + " " + query
+    return query, findpost, findcities
 
 
 def add_coords(query, coords):
-    temp8 = geohash
-    for letter in query.lower():
-        temp8 = temp8.get(letter)
-    if 'coords' in temp8:
+    if len(query) == 3:
+        temp8 = geohashp
+        temp14 = temp8.posts.find_one({u"query": query[0][0]})
+        temp18 = temp14.get(u"nest")
+        for x in (query[0] + query[1])[1:]:
+            temp18 = temp18.get(x)
+    elif len(query) == 2:
+        temp8 = geohashc
+        temp14 = temp8.posts.find_one({u"query": query[0][0]})
+        temp18 = temp14.get(u"nest")
+        for x in query[0][1:]:
+            temp18 = temp18.get(x)
+    else:
+        temp8 = geohash
+        temp14 = temp8.posts.find_one({u"query": query[0][0]})
+        temp18 = temp14.get(u"nest")
+        del query[0][0]
+    for char in query[-1]:
+        temp18 = temp18.get(char)
+    if u'coords' in temp18:
         for x in coords:
-            if x not in temp8['coords']:
-                temp8['coords'].append(x)
+            if x not in temp18[u'coords']:
+                temp18[u'coords'].append(x)
     else:
-        temp8['coords'] = coords
-    return
+        temp18[u'coords'] = coords
+    temp8.posts.update_one({u"_id": temp14[u"_id"]},
+                           {"$set": {u"nest": temp14[u"nest"]}})
 
 
-def lookup_coords(query):
-    temp9 = geohash
-    for letter in query.lower():
-        if letter in temp9:
-            temp9 = temp9.get(letter)
-        else:
+def lookup_coords(query, findpost, findcities):
+    if findpost:
+        for x in findpost + findcities:
+            query = re.sub(ur"{0}".format(x), u"", query, flags=re.U)
+        query = re.sub(ur"  ", u" ", query, flags=re.U).strip()
+        temp9 = geohashp
+        if not temp9.posts.find_one({u"query": findpost[0]}):
             return False
-    if 'coords' in temp9:
-        return temp9['coords']
-    else:
+        temp9 = temp9.posts.find_one({u"query": findpost[0]}).get(u"nest")
+        for x in (findpost + findcities)[1:]:
+            if x not in temp9:
+                return False
+            temp9 = temp9.get(x)
+        for char in query:
+            if char not in temp9:
+                return False
+            temp9 = temp9.get(char)
+        if u'coords' not in temp9:
+            return False
+        return temp9[u'coords']
+    if findcities:
+        for x in findcities:
+            query = re.sub(ur"{0}".format(x), u"", query, flags=re.U)
+        query = re.sub(ur"  ", u" ", query, flags=re.U).strip()
+        temp9 = geohashc
+        if not temp9.posts.find_one({u"query": findcities[0]}):
+            return False
+        temp9 = temp9.posts.find_one({u"query": findcities[0]}).get(u"nest")
+        for x in findcities[1:]:
+            if x not in temp9:
+                return False
+            temp9 = temp9.get(x)
+
+        for char in query:
+            if char not in temp9:
+                return False
+            temp9 = temp9.get(char)
+        if u'coords' not in temp9:
+            return False
+        return temp9[u'coords']
+    temp9 = geohash
+    if not temp9.posts.find_one({u"query": query[0]}):
         return False
-
-
-def lookup_closest(query):
-    temp10 = geohash
-    counter = 0
-    for char in query.lower():
-        if char in temp10:
-            temp10 = temp10.get(char)
-        elif len(temp10) == 1 and 'coords' not in temp10:
-            for x in temp10:
-                temp10 = temp10.get(x)
-            counter += 1
-        else:
-            min = (0, "")
-            for x in temp10:
-                if x == 'coords':
-                    continue
-                dist = abs((ord(x) - ord(char)))
-                if min[0] < dist:
-                    min = (dist, x)
-            counter += 1
-            temp10 = temp10.get(min[1])
-        if counter >= 3:
-            return []
-
-    if 'coords' in temp10:
-        return temp10['coords']
-    args = []
-    for y in temp10:
-        if 'coords' in temp10[y]:
-            return temp10[y]['coords']
-        args.append(y)
-    return repeat(temp10, args)
+    temp9 = temp9.posts.find_one({u"query": query[0]}).get(u"nest")
+    for char in query[1:]:
+        if char not in temp9:
+            return False
+        temp9 = temp9.get(char)
+    if u'coords' not in temp9:
+        return False
+    return temp9[u'coords']
 
 
 def locate(address):
-    query = " ".join(address).lower().decode("utf-8")
-    if not lookup_coords(query):
+    query = " ".join(address).lower().decode("utf-8").replace(u".", u"\uff0e")
+    query, post, city = rearrange(query)
+    if not lookup_coords(query, post, city):
         temp = get_geo(params(address))
         if temp['status'] == u'OK':
-            geocache.update({query: (temp['results'], time.ctime(time.time()))})
-            f = open("geocache.txt", "wb")
-            ujson.dump(geocache, f, ensure_ascii=False)
-            f.close()
-            hashq(query)
+            updatecache(query, temp['results'])
+            geohashq = hashq(query, post, city)
             coordlist = []
             for y in temp['results']:
                 coords = (float(y['geometry']['location']['lng']), float(y['geometry']['location']['lat']))
-                temp3 = fetch(coords)
-                coordlist.append(temp3['coords'])
+                geogrident = fetch(coords)
+                if geogrident[u'coords'] not in coordlist:
+                    coordlist.append(geogrident[u'coords'])
                 for z in y['address_components']:
                     if 'country' in z['types']:
-                        if [z['short_name'], z['long_name']] not in temp3['country']:
-                            temp3['country'].append([z['short_name'], z['long_name']])
-            add_coords(query, coordlist)
-            f = open("geogrid2.txt", "wb")
-            ujson.dump(geogrid, f, ensure_ascii=False)
-            f.close()
-            f = open("geohash.txt", "wb")
-            ujson.dump(geohash, f, ensure_ascii=False)
-            f.close()
+                        country = [z['short_name'], z['long_name']]
+                if u'country' in geogrident and country not in geogrident[u'country']:
+                    country = geogrident[u'country'] + country
+                    updategrid(coords, country, query)
+                else:
+                    updategrid(coords, [country], query)
+            add_coords(geohashq, coordlist)
+            return coordlist
         else:
             return temp
-    return lookup_coords(query), fetch(lookup_coords(query)[0])['country']
+    return lookup_coords(query, post, city)
 
-print locate(["08037", "Barcelona", "Spain"])
-print locate(["london"])
-print locate(['Saint Petersburg', 'Blohina ulitsa'])
-print locate(["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"])
+
+print ["08037", "Barcelona", "Spain"], locate(["08037", "Barcelona", "Spain"])
+print ["Barcelona", "Spain", "08037"], locate(["Barcelona", "Spain", "08037"])
+print ["london"], locate(["london"])
+print ['Saint', 'Petersburg', 'Blohina', 'ulitsa'], locate(['Saint', 'Petersburg', 'Blohina', 'ulitsa'])
+print ["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"], locate(["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"])
+print ["ул. Блохина", "Санкт-Петербург", "Россия", "197198"],
 print locate(["ул. Блохина", "Санкт-Петербург", "Россия", "197198"])
-print locate(["LONDON", "liverpool", "street"])
-print locate(['manchester'])
-print locate(['manchester', "bank"])
-print locate(["cismigiu","bucuresti"])
-print locate(["liverpool"])
+print ["LONDON", "liverpool", "street"], locate(["LONDON", "liverpool", "street"])
+print ['manchester'], locate(['manchester'])
+print ['manchester', "bank"], locate(['manchester', "bank"])
+print ["cismigiu", "bucuresti"], locate(["cismigiu", "bucuresti"])
+print ["liverpool"], locate(["liverpool"])
+print ["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"],
+print locate(["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"])
 
-print lookup_closest('Londn')
