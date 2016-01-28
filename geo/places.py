@@ -45,7 +45,7 @@ apimap = {'facebook':
               {'search':
                    {'query': 'keyword', 'type': '', 'typearg': 'types', 'coords': 'location',
                     'radius': 'radius', 'results': 'results', 'status': 'status',
-                    'error': 'message', 'url': 'radarsearch/json?'},
+                    'error': 'message', 'url': 'nearbysearch/json?'},
                'base': 'https://maps.googleapis.com/maps/api/place/', 'keyarg': "key",
                'key': "AIzaSyAgcnAoMCuhgMwXLXwRuGiEZmP0T-oWCRM", 'lang': 'language',
                'detail': {'url': 'details/json?', 'query': 'placeid', 'results': 'result',
@@ -55,18 +55,18 @@ apimap = {'facebook':
 
 
 def places(query, coords, api="facebook", radius=5000, language="en"):
-    query = query.decode("utf-8").replace(u".", u"\uff0e").lower()
+    query = query.decode("utf-8").lower().replace(u".", u"\uff0e")
     if api == "yandex":
         radius = str((radius/1000)/111.32)[:7]+","+str((radius/1000)/111.32)[:7]
         coords = [coords[1], coords[0]]
-    search = places_db.posts.find_one({u"query":query, u"coords":coords, u"api": api})
+    search = places_db.posts.find_one({u"query": query, u"coords": coords, u"api": api})
     if search:
         return search[u"results"]
     method = 'search'
     smap = apimap[api][method]
     url = apimap[api]['base'] + smap['url']
     params = {
-        smap['query']: query,
+        smap['query']: str(query.encode("utf-8")),
         smap['coords']: '{0},{1}'.format(coords[1], coords[0]),
         smap['radius']: radius,
         smap['typearg']: smap['type'],
@@ -91,7 +91,7 @@ def places(query, coords, api="facebook", radius=5000, language="en"):
 
 
 def placeid(query, api="facebook", language="en"):
-    search = placeid_db.posts.find_one({u"query":query, u"api": api})
+    search = placeid_db.posts.find_one({u"query": query, u"api": api})
     if search:
         return search[u"results"]
     method = 'detail'
@@ -131,9 +131,9 @@ c = pycurl.Curl()
 query = "food"
 address = ["08037", "Barcelona", "Spain"]
 coords = locate(address)
-## options need to be integrated here to decide which coords to use
-## also possible to use fetch(coords) via location.py to show countries for each coord.
-## also this option will help decide which places.api to use
+# options need to be integrated here to decide which coords to use
+# also possible to use fetch(coords) via location.py to show countries for each coord.
+# also this option will help decide which places.api to use
 s = places(query, coords[0])
 s = placeid(s[0]['id']+","+s[1]['id'])
 for i in s:
