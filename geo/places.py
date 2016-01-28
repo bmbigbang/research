@@ -55,6 +55,7 @@ apimap = {'facebook':
 
 
 def places(query, coords, api="facebook", radius=5000, language="en"):
+    query = query.decode("utf-8").replace(u".", u"\uff0e").lower()
     if api == "yandex":
         radius = str((radius/1000)/111.32)[:7]+","+str((radius/1000)/111.32)[:7]
         coords = [coords[1], coords[0]]
