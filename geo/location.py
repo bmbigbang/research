@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import ujson
-from misc import params
-from tests import postcode, cities
+from misc import params, postcode, getlastnest
 import pymongo
 import pycurl
 import urllib
@@ -17,6 +16,10 @@ geohashp = client['test-geohashp']
 geohashc = client['test-geohashc']
 geogrid = client['test-geogrid']
 
+
+f = open("cities.txt", "rb")
+citiesdb = ujson.load(f)
+f.close()
 # f = open("geocache.txt", "rb")
 # geocache = ujson.load(f)
 # f.close()
@@ -43,11 +46,11 @@ def get_geo(prms):
 
 
 def fetch(crds):
-    return geogrid.places.find_one({"coords": {"$near": crds}})
+    return geogrid.places.find_one({u"coords": {"$near": crds}})
 
 
 def updategrid(crds, country, query):
-    s = geogrid.places.find_one({"coords": {"$near": crds}})[u'_id']
+    s = geogrid.places.find_one({u"coords": {"$near": crds}})[u'_id']
     geogrid.places.update_one(
         {u"_id": s},
         {
@@ -60,10 +63,58 @@ def updategrid(crds, country, query):
 
 
 def updatecache(query, results):
-    entry = {'query': query,
-             'results': results,
-             'updated': time.ctime(time.time())}
+    entry = {u'query': query,
+             u'results': results,
+             u'updated': time.ctime(time.time())}
     geocache.posts.insert_one(entry)
+
+
+def cities(query):
+    parts = re.split(ur"\s", query, flags=re.U)
+    foundcities = []
+    for x in parts:
+        letters = ""
+        counter = 0
+        temp10 = citiesdb
+        for char in x:
+            if char in temp10:
+                temp10 = temp10.get(char)
+                letters += char
+            elif len(temp10) == 1 and unicode("*|") not in temp10:
+                for y in temp10:
+                    temp10 = temp10.get(y)
+                    letters += y
+                counter += 1
+            elif len(temp10) == 2 and unicode("*|") in temp10:
+                for y in temp10:
+                    if y != unicode("*|"):
+                        temp10 = temp10.get(y)
+                        letters += y
+                counter += 1
+            elif temp10:
+                mini = (5000000, "")
+                for y in temp10:
+                    if y == unicode("*|"):
+                        continue
+                    dist = abs((ord(y) - ord(char)))
+                    if mini[0] > dist:
+                        mini = (dist, y)
+                counter += 1
+                if mini[1]:
+                    temp10 = temp10.get(mini[1])
+                    letters += mini[1]
+            if counter >= 3 or not temp10:
+                break
+        if unicode("*|") not in temp10:
+            if getlastnest(temp10):
+                letters += getlastnest(temp10)
+            else:
+                continue
+        if abs(len(letters)-len(x)) >= 3:
+            continue
+        if counter <= 3:
+            foundcities.append((letters, x, counter))
+    return foundcities
 
 
 def hashq(query, findpost, findcities):
@@ -254,18 +305,18 @@ def locate(address):
     return lookup_coords(query, post, city)
 
 
-print ["08037", "Barcelona", "Spain"], locate(["08037", "Barcelona", "Spain"])
-print ["Barcelona", "Spain", "08037"], locate(["Barcelona", "Spain", "08037"])
-print ["london"], locate(["london"])
-print ['Saint', 'Petersburg', 'Blohina', 'ulitsa'], locate(['Saint', 'Petersburg', 'Blohina', 'ulitsa'])
-print ["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"], locate(["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"])
-print ["ул. Блохина", "Санкт-Петербург", "Россия", "197198"],
-print locate(["ул. Блохина", "Санкт-Петербург", "Россия", "197198"])
-print ["LONDON", "liverpool", "street"], locate(["LONDON", "liverpool", "street"])
-print ['manchester'], locate(['manchester'])
-print ['manchester', "bank"], locate(['manchester', "bank"])
-print ["cismigiu", "bucuresti"], locate(["cismigiu", "bucuresti"])
-print ["liverpool"], locate(["liverpool"])
-print ["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"],
-print locate(["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"])
+# print ["08037", "Barcelona", "Spain"], locate(["08037", "Barcelona", "Spain"])
+# print ["Barcelona", "Spain", "08037"], locate(["Barcelona", "Spain", "08037"])
+# print ["london"], locate(["london"])
+# print ['Saint', 'Petersburg', 'Blohina', 'ulitsa'], locate(['Saint', 'Petersburg', 'Blohina', 'ulitsa'])
+# print ["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"], locate(["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"])
+# print ["ул. Блохина", "Санкт-Петербург", "Россия", "197198"],
+# print locate(["ул. Блохина", "Санкт-Петербург", "Россия", "197198"])
+# print ["LONDON", "liverpool", "street"], locate(["LONDON", "liverpool", "street"])
+# print ['manchester'], locate(['manchester'])
+# print ['manchester', "bank"], locate(['manchester', "bank"])
+# print ["cismigiu", "bucuresti"], locate(["cismigiu", "bucuresti"])
+# print ["liverpool"], locate(["liverpool"])
+# print ["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"],
+# print locate(["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"])
 

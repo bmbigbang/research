@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import operator
 from math import sqrt
+import re
 
 
 def digit(num, dig):
@@ -78,5 +79,20 @@ def getlastnest(nest):
                 letters += x+y
                 return letters
     return False
+
+
+def postcode(query):
+    # split codes need to be checked for at least two digits
+    split_postcodes = re.compile(ur"(?<![\w\.])\w{2,5}[\- ]\w{2,4}(?![\w\.])", flags=re.U|re.I)
+    split_postcodes = [i for i in re.findall(split_postcodes, query) if len(re.findall(r'\d', i)) > 1]
+    found = " ".join(split_postcodes)
+    # num codes need to not be splits
+    num_postcodes = re.compile(ur"(?<![\w\.])\d{4,10}(?![\w\.])", flags=re.U)
+    num_postcodes = [i for i in re.findall(num_postcodes, query) if found.find(i) == -1]
+    found += " ".join(num_postcodes)
+    # split type postcodes without delimiter are looked for except the pure number ones
+    split_joined_postcodes = re.compile(ur"(?<![\w\.])\w{2}\d{3,6}(?![\w\.])", flags=re.U|re.I)
+    split_joined_postcodes = [i for i in re.findall(split_joined_postcodes, query) if found.find(i) == -1]
+    return split_postcodes + num_postcodes + split_joined_postcodes
 
 
