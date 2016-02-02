@@ -167,14 +167,21 @@ def airportFIDS(airp, direction):
     return temp
 
 
-def flight(flightid, date=False):
+def flight(flightid, date=u""):
     if not airline(flightid):
         return "Error with flight ID - airline check"
     flightid = flightid.split()
-    if not date:
-        year = time.strftime("%Y")
-        month = time.strftime("%m")
-        day = time.strftime("%d")
+    year = time.strftime("%Y")
+    month = time.strftime("%m")
+    day = time.strftime("%d")
+    if date:
+        now = datetime.datetime(int(year), int(month), int(day)).toordinal()
+        date = dateparser.parse(date)
+        if date.toordinal() - (3600*24*3) > now:
+            return "Error with date, can only look for flights 3 days in advance"
+        year = "{0}".format(date.year)
+        month = "{:02d}".format(date.month)
+        day = "{:02d}".format(date.day)
     args = "{0}/{1}/dep/{2}/{3}/{4}".format(flightid[0], flightid[1], year, month, day)
     search = flights_db.find_one({u"flightargs": args})
     if search:
@@ -230,6 +237,18 @@ tq2 = airport(tq["arrivalAirportFsCode"], detail=True)
 print "To", tq2[u'name'].title() + ",", tq2[u'city'].title() + ",", tq2[u'country'].title()
 print "Departure Date:", tq['departureDate']['dateLocal'], "Local,", tq['departureDate']['dateUtc'], "UTC"
 print "Arrival Date:", tq['arrivalDate']['dateLocal'], "Local,", tq['arrivalDate']['dateUtc'], "UTC"
+
+print "Flight check test with LH 925 on 3 feb 16"
+tq = flight("LH 925", date=u'3 feb 16')[u'flightStatuses'][0]
+print "Flight ID:", tq["carrierFsCode"], tq["flightNumber"], "- Flight Duration:",\
+    tq["flightDurations"]["scheduledBlockMinutes"], "Minutes"
+tq2 = airport(tq["departureAirportFsCode"], detail=True)
+print "From", tq2[u'name'].title() + ",", tq2[u'city'].title() + ",", tq2[u'country'].title()
+tq2 = airport(tq["arrivalAirportFsCode"], detail=True)
+print "To", tq2[u'name'].title() + ",", tq2[u'city'].title() + ",", tq2[u'country'].title()
+print "Departure Date:", tq['departureDate']['dateLocal'], "Local,", tq['departureDate']['dateUtc'], "UTC"
+print "Arrival Date:", tq['arrivalDate']['dateLocal'], "Local,", tq['arrivalDate']['dateUtc'], "UTC"
+
 c.close()
 bufr.close()
 

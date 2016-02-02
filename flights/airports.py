@@ -24,6 +24,7 @@ airports_db = client['test-airports'].airports
 #     #  O (Australia), Z (New Zealand), N (None) or U (Unknown).
 #     # zz database time zone	Timezone in "tz" (Olson) format, eg. "America/Los_Angeles".
 #     # tz data is ISO 8859-1 (Latin-1) encoded, with no special characters.
+#     x[1] = re.sub(u"intl", u'international', x[1], flags=re.U|re.I)
 #     entry = {
 #         "name": x[1].decode("utf-8").lower(), "city": x[2].decode("utf-8").lower(),
 #         "country": x[3].decode("utf-8").lower(), "iata": x[4].decode("utf-8") if x[4] else u"",
@@ -32,7 +33,6 @@ airports_db = client['test-airports'].airports
 #     }
 #     airports_db.insert_one(entry)
 
-
 # example search methods:
 query = "belfast"
 for i in airports_db.find({"$text": {'$search': query}}, {}):
@@ -40,12 +40,7 @@ for i in airports_db.find({"$text": {'$search': query}}, {}):
 
 print "-"*50
 
-pattern = re.compile(ur'bel', flags=re.U|re.I)
+pattern = re.compile(ur'belfast intl', flags=re.U|re.I)
 regex = bson.regex.Regex.from_native(pattern)
 for i in airports_db.find({"name": {"$regex": regex}}, {}):
     print airports_db.find_one(i)
-
-
-
-
-
