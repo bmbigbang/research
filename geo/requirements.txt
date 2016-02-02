@@ -1,0 +1,8 @@
+#
+# pip2.7 requirements for locations.py/places.py
+#
+# (python==2.7.6)
+
+ujson==1.33
+pymongo==3.2
+pycurl==7.19.5.1
