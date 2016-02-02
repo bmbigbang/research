@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import ujson
 from misc import params, postcode, getlastnest
+import json
 import pymongo
-import pycurl
-import urllib
-import cStringIO
+import requests
 import time
 import re
 
@@ -18,31 +16,24 @@ geogrid = client['geogrid']
 
 
 f = open("cities.txt", "rb")
-citiesdb = ujson.load(f)
+citiesdb = json.load(f)
 f.close()
 # f = open("geocache.txt", "rb")
-# geocache = ujson.load(f)
+# geocache = json.load(f)
 # f.close()
 # f = open("geohash.txt", "rb")
-# geohash = ujson.load(f)
+# geohash = json.load(f)
 # f.close()
 # f = open("geogrid2.txt", "rb")
-# geogrid = ujson.load(f)
+# geogrid = json.load(f)
 # f.close()
 
 
 def get_geo(prms):
-    bufr = cStringIO.StringIO()
-    base = "https://maps.googleapis.com/maps/api/geocode/json?"
-    print base + urllib.urlencode(prms)
-    c = pycurl.Curl()
-    c.setopt(c.URL, base + urllib.urlencode(prms))
-    c.setopt(c.WRITEDATA, bufr)
-    c.perform()
-    c.close()
-    t = ujson.loads(bufr.getvalue())
-    bufr.close()
-    return t
+    base = "https://maps.googleapis.com/maps/api/geocode/json"
+    r_call = requests.get(base, prms)
+    print r_call.url
+    return r_call.json()
 
 
 def fetch(crds):

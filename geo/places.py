@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import urllib
-import pymongo
-import pycurl
-import ujson
-import cStringIO
 from location import locate
+import pymongo
+import json
+import requests
 
 client = pymongo.MongoClient()
 places_db = client['test-places']
@@ -15,10 +13,10 @@ apimap = {'facebook':
               {'search':
                    {'query': 'q', 'type': 'place', 'typearg': 'type', 'coords': 'center',
                     'radius': 'distance', 'results': 'data', 'status': 'error',
-                    'error': 'message', 'url': 'search?'},
+                    'error': 'message', 'url': 'search'},
                'base': 'https://graph.facebook.com/', 'keyarg': "access_token",
                'key': "1665966323660099|3c2d38e96d7a0fd6dfcd0c35ea7f3303",
-               'detail': {'query': 'ids', 'url': '?',
+               'detail': {'query': 'ids', 'url': '',
                           'fields': 'about,name,attire,location,website,phone,category,category_list',
                           'status': 'error', 'error': 'message', 'results': ""}
                },
@@ -26,17 +24,17 @@ apimap = {'facebook':
               {'search':
                    {'query': 'q', 'type': '', 'typearg': 'tag', 'coords': 'location',
                     'radius': 'radius', 'results': 'results', 'status': 'status',
-                    'error': 'message', 'url': 'search?'},
+                    'error': 'message', 'url': 'search'},
                'base': 'http://api.map.baidu.com/place/v2/', 'keyarg': "ak",
                'key': "bqhgFZml8rYqwUxv3Wk5IUrB", 'output': 'json',
-               'detail': {'query': 'uids', 'url': 'detail?', 'results': 'result',
+               'detail': {'query': 'uids', 'url': 'detail', 'results': 'result',
                           'status': 'status', 'error': 'message'}
                },
           'yandex':
               {'search':
                    {'query': 'text', 'type': 'biz', 'typearg': 'type', 'coords': 'll',
                     'radius': 'spn', 'results': 'features', 'status': 'status',
-                    'error': 'message', 'url': '?'},
+                    'error': 'message', 'url': ''},
                'base': 'https://search-maps.yandex.ru/v1/', 'keyarg': "apikey",
                'key': "9ea48cef-aa99-4d20-bf0b-1a3c38a0c190", 'lang': 'lang',
                'detail': {}
@@ -45,10 +43,10 @@ apimap = {'facebook':
               {'search':
                    {'query': 'keyword', 'type': '', 'typearg': 'types', 'coords': 'location',
                     'radius': 'radius', 'results': 'results', 'status': 'status',
-                    'error': 'message', 'url': 'nearbysearch/json?'},
+                    'error': 'message', 'url': 'nearbysearch/json'},
                'base': 'https://maps.googleapis.com/maps/api/place/', 'keyarg': "key",
                'key': "AIzaSyAgcnAoMCuhgMwXLXwRuGiEZmP0T-oWCRM", 'lang': 'language',
-               'detail': {'url': 'details/json?', 'query': 'placeid', 'results': 'result',
+               'detail': {'url': 'details/json', 'query': 'placeid', 'results': 'result',
                           'status': 'status', 'error': 'message'}
                }
           }
@@ -67,7 +65,7 @@ def places(query, coords, api="facebook", radius=5000, language="en"):
     url = apimap[api]['base'] + smap['url']
     params = {
         smap['query']: str(query.encode("utf-8")),
-        smap['coords']: '{0},{1}'.format(coords[1], coords[0]),
+        smap['coords']: '{0[1]},{0[0]}'.format(coords),
         smap['radius']: radius,
         smap['typearg']: smap['type'],
         apimap[api]['keyarg']: apimap[api]['key']
@@ -76,13 +74,10 @@ def places(query, coords, api="facebook", radius=5000, language="en"):
         params.update({'output': apimap[api]['output']})
     if 'lang' in apimap[api]:
         params.update({apimap[api]['lang']: language})
-    print url + urllib.urlencode(params)
-    c.reset()
-    c.setopt(c.URL, url + urllib.urlencode(params))
-    c.setopt(c.WRITEDATA, bufr)
-    c.perform()
-    temp = ujson.loads(bufr.getvalue())
-    bufr.truncate(0)
+
+    r_call = requests.get(url, params)
+    print r_call.url
+    temp = r_call.json()
     if smap['results'] in temp:
         places_db.posts.insert_one({u"query": query, u"coords": coords, u"api": api, u"results": temp[smap['results']]})
         return temp[smap['results']]
@@ -107,13 +102,10 @@ def placeid(query, api="facebook", language="en"):
         params.update({'output': apimap[api]['output']})
     if 'lang' in apimap[api]:
         params.update({apimap[api]['lang']: language})
-    print url + urllib.urlencode(params)
-    c.reset()
-    c.setopt(c.URL, url + urllib.urlencode(params))
-    c.setopt(c.WRITEDATA, bufr)
-    c.perform()
-    temp = ujson.loads(bufr.getvalue())
-    bufr.truncate(0)
+
+    r_call = requests.get(url, params)
+    print r_call.url
+    temp = r_call.json()
     if smap['results'] in temp:
         placeid_db.posts.insert_one({u"query": query, u"api": api, u"results": temp[smap['results']]})
         return temp[smap['results']]
@@ -126,8 +118,7 @@ def placeid(query, api="facebook", language="en"):
 
 
 
-bufr = cStringIO.StringIO()
-c = pycurl.Curl()
+
 query = "food"
 address = ["08037", "Barcelona", "Spain"]
 coords = locate(address)
@@ -142,8 +133,7 @@ for i in s:
         print " - ", s[i]['phone']
     else:
         print " - "
-c.close()
-c = pycurl.Curl()
+
 
 address = ["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"]
 query = "餐馆"
@@ -156,8 +146,7 @@ for i in s[:2]:
         print " - ", i['telephone']
     else:
         print " - "
-c.close()
-c = pycurl.Curl()
+
 
 address = ["ул. Блохина", "Санкт-Петербург", "Россия", "197198"]
 query = "ресторан"
@@ -173,8 +162,7 @@ for x in s:
             pass
     if counter == 2:
         break
-c.close()
-c = pycurl.Curl()
+
 
 address = ["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"]
 query = "भोजनालय"
@@ -188,6 +176,4 @@ for i in s[:2]:
     else:
         print " - "
 
-c.close()
-bufr.close()
 
