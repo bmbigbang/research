@@ -177,7 +177,7 @@ def flight(flightid, date=u""):
     if date:
         now = datetime.datetime(int(year), int(month), int(day)).toordinal()
         date = dateparser.parse(date)
-        if date.toordinal() - (3600*24*3) > now:
+        if date.toordinal() - 3 >= now:
             return "Error with date, can only look for flights 3 days in advance"
         year = "{0}".format(date.year)
         month = "{:02d}".format(date.month)
@@ -228,7 +228,15 @@ for x in testquery[:5]:
     print "-" * 50
 
 print "Flight check test with U2 6748 (this is date sensitive)"
-tq = flight("U2 6704")[u'flightStatuses'][0]
+tq = flight("U2 6704")
+if u'flightStatuses' in tq:
+    tq = tq[u'flightStatuses']
+    if not tq:
+        print "empty list returned from server"
+    else:
+        tq = tq[0]
+else:
+    print "api call was not completed or database has incorrect entry"
 print "Flight ID:", tq["carrierFsCode"], tq["flightNumber"], "- Flight Duration:",\
     tq["flightDurations"]["scheduledBlockMinutes"], "Minutes"
 tq2 = airport(tq["departureAirportFsCode"], detail=True)
@@ -238,8 +246,16 @@ print "To", tq2[u'name'].title() + ",", tq2[u'city'].title() + ",", tq2[u'countr
 print "Departure Date:", tq['departureDate']['dateLocal'], "Local,", tq['departureDate']['dateUtc'], "UTC"
 print "Arrival Date:", tq['arrivalDate']['dateLocal'], "Local,", tq['arrivalDate']['dateUtc'], "UTC"
 
-print "Flight check test with LH 925 on 3 feb 16"
-tq = flight("LH 925", date=u'3 feb 16')[u'flightStatuses'][0]
+print "Flight check test with LH 925 on 4 feb 16"
+tq = flight("LH 925", date=u'4 feb 16')
+if u'flightStatuses' in tq:
+    tq = tq[u'flightStatuses']
+    if not tq:
+        print "empty list returned from server"
+    else:
+        tq = tq[0]
+else:
+    print "api call was not completed or database has incorrect entry"
 print "Flight ID:", tq["carrierFsCode"], tq["flightNumber"], "- Flight Duration:",\
     tq["flightDurations"]["scheduledBlockMinutes"], "Minutes"
 tq2 = airport(tq["departureAirportFsCode"], detail=True)
@@ -251,4 +267,3 @@ print "Arrival Date:", tq['arrivalDate']['dateLocal'], "Local,", tq['arrivalDate
 
 c.close()
 bufr.close()
-
