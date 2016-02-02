@@ -14,7 +14,7 @@ geocache = client['test-geocache']
 geohash = client['test-geohash']
 geohashp = client['test-geohashp']
 geohashc = client['test-geohashc']
-geogrid = client['test-geogrid']
+geogrid = client['geogrid']
 
 
 f = open("cities.txt", "rb")
