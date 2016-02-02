@@ -10,7 +10,8 @@ import urllib
 import pycurl
 import cStringIO
 import time
-
+import dateparser
+import datetime
 
 # with open("airlines.dat", "rb") as f:
 #     s = csv.reader(f)
@@ -178,12 +179,12 @@ def flight(flightid, date=False):
     search = flights_db.find_one({u"flightargs": args})
     if search:
         if u'updated' in search:
-            if float(search[u'updated']) + (3600*12) > time.time():
+            if search[u'updated'] == time.strftime("%d"):
                 return search[u'results']
     base = "https://api.flightstats.com/flex/flightstatus/rest/v2/json/flight/status/"
     params = "?appId=9cde3a13&appKey=d252594ac2904e9d65dc2beb7d192321&utc=false"
     url = base + args + params
-    print url + urllib.urlencode(params)
+    print url
     c.reset()
     c.setopt(c.URL, url)
     c.setopt(c.WRITEDATA, bufr)
@@ -195,9 +196,9 @@ def flight(flightid, date=False):
     if search:
         flights_db.update_one({u"_id": search[u"_id"]},
                               {"$set": {u"results": temp,
-                                        u'updated': time.time()}})
+                                        u'updated': time.strftime("%d")}})
     else:
-        flights_db.insert_one({u"results": temp, u'updated': time.time(),
+        flights_db.insert_one({u"results": temp, u'updated': time.strftime("%d"),
                                u"flightargs": args})
     return temp
 
@@ -208,25 +209,25 @@ testquery = airportFIDS(airport("belfast intl"), "departures")[u'fidsData']
 for x in testquery[:5]:
     print "Flight ID:", x[u'flight'] + ", set for departure at:", x[u'scheduledTime'], ", is", x[u'remarks']
     testquery2 = airport(x[u'airportCode'], detail=True)
-    print "Destination:", testquery2[u'name'].capitalize() + ",", testquery2[u'city'].capitalize() + ",", \
-        testquery2[u'country'].capitalize(), "- Airline:", airline(x[u'flight'])[1]
+    print "Destination:", testquery2[u'name'].title() + ",", testquery2[u'city'].title() + ",", \
+        testquery2[u'country'].title(), "- Airline:", airline(x[u'flight'])[1]
     print "-" * 50
 testquery = airportFIDS(airport("fast"), "arrivals")[u'fidsData']
 for x in testquery[:5]:
     print "Flight ID:", x[u'flight'] + ", set for arrival at:", x[u'scheduledTime'], ", is", x[u'remarks']
     testquery2 = airport(x[u'airportCode'], detail=True)
-    print "Destination:", testquery2[u'name'].capitalize() + ",", testquery2[u'city'].capitalize() + ",", \
-        testquery2[u'country'].capitalize(), "- Airline:", airline(x[u'flight'])[1]
+    print "Destination:", testquery2[u'name'].title() + ",", testquery2[u'city'].title() + ",", \
+        testquery2[u'country'].title(), "- Airline:", airline(x[u'flight'])[1]
     print "-" * 50
 
 print "Flight check test with U2 6748 (this is date sensitive)"
-tq = flight("U2 6748")[u'flightStatuses'][0]
+tq = flight("U2 6704")[u'flightStatuses'][0]
 print "Flight ID:", tq["carrierFsCode"], tq["flightNumber"], "- Flight Duration:",\
     tq["flightDurations"]["scheduledBlockMinutes"], "Minutes"
 tq2 = airport(tq["departureAirportFsCode"], detail=True)
-print "From", tq2[u'name'].capitalize() + ",", tq2[u'city'].capitalize() + ",", tq2[u'country'].capitalize()
+print "From", tq2[u'name'].title() + ",", tq2[u'city'].title() + ",", tq2[u'country'].title()
 tq2 = airport(tq["arrivalAirportFsCode"], detail=True)
-print "To", tq2[u'name'].capitalize() + ",", tq2[u'city'].capitalize() + ",", tq2[u'country'].capitalize()
+print "To", tq2[u'name'].title() + ",", tq2[u'city'].title() + ",", tq2[u'country'].title()
 print "Departure Date:", tq['departureDate']['dateLocal'], "Local,", tq['departureDate']['dateUtc'], "UTC"
 print "Arrival Date:", tq['arrivalDate']['dateLocal'], "Local,", tq['arrivalDate']['dateUtc'], "UTC"
 c.close()
