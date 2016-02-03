@@ -17,9 +17,10 @@ apimap = {'facebook':
                     'error': 'message', 'url': 'search'},
                'base': 'https://graph.facebook.com/', 'keyarg': "access_token",
                'key': "1665966323660099|3c2d38e96d7a0fd6dfcd0c35ea7f3303",
-               'detail': {'query': 'ids', 'url': '',
-                          'fields': 'about,name,attire,location,website,phone,category,category_list',
-                          'status': 'error', 'error': 'message', 'results': ""}
+               'detail':
+                   {'query': 'ids', 'url': '',
+                    'fields': 'about,name,attire,location,website,phone,category,category_list',
+                    'status': 'error', 'error': 'message', 'results': ""}
                },
           'baidu':
               {'search':
@@ -28,8 +29,9 @@ apimap = {'facebook':
                     'error': 'message', 'url': 'search'},
                'base': 'http://api.map.baidu.com/place/v2/', 'keyarg': "ak",
                'key': "bqhgFZml8rYqwUxv3Wk5IUrB", 'output': 'json',
-               'detail': {'query': 'uids', 'url': 'detail', 'results': 'result',
-                          'status': 'status', 'error': 'message'}
+               'detail':
+                   {'query': 'uids', 'url': 'detail', 'results': 'result',
+                    'status': 'status', 'error': 'message'}
                },
           'yandex':
               {'search':
@@ -47,8 +49,9 @@ apimap = {'facebook':
                     'error': 'message', 'url': 'nearbysearch/json'},
                'base': 'https://maps.googleapis.com/maps/api/place/', 'keyarg': "key",
                'key': "AIzaSyAgcnAoMCuhgMwXLXwRuGiEZmP0T-oWCRM", 'lang': 'language',
-               'detail': {'url': 'details/json', 'query': 'placeid', 'results': 'result',
-                          'status': 'status', 'error': 'message'}
+               'detail':
+                   {'url': 'details/json', 'query': 'placeid', 'results': 'result',
+                    'status': 'status', 'error': 'message'}
                },
           'yelp':
               {'search':
@@ -167,10 +170,38 @@ query = "餐馆"
 coords = locate(address)
 
 # options integration example:
-# location = OptionsList(*[fetch(x)[u'city'][0]+unicode(",")+fetch(x)[u'country'][0][1] for x in coords]])
-# response = "found multiple results. Please choose letter"
-# coords = coords[location[0]]
-# ## location needs to be a tuple of the index chosen from options and country eg. (1,"Spain")
+#
+# if len(coords) > 1 and not location:
+#   location = OptionsList(*[fetch(x)[u'city'][0]+unicode(",")+fetch(x)[u'country'][0][1] for x in coords])
+#   response = "found multiple results. Please choose letter"
+# elif len(coords) > 1 and location:
+#   chosen_location = location.get_option_index(first_bit)
+#   coords = coords[chosen_location]
+#   country = fetch(coords)[u'country'][0][1]
+# else:
+#   coords = coords[0]
+#   country = fetch(coords)[u'country'][0][1]
+
+# then we choose the api to use based on their country:
+# if fetch(coords[0])[u'country'][0][1] in apiselect:
+#    api = apiselect[fetch(coords[0])[u'country'][0][1]]
+#else:
+#    api = "google"
+
+# after location was shown, we show all results from places(query, coords, api=api) as another option:
+# note! here each api will need a different set of parameters for the options list and ids stored
+# places_call = places(query, coords, api=api)
+# if places_call and not places_options:
+#   places_options = OptionsList(*[x['name']+unicode(",")+x['telephone'] for x in places_call])
+#   response = "send letter for more details"
+# elif places_call and places_options:
+#   chosen_place = places_options.get_option_index(first_bit)
+#   id = places_call[chosen_location]['uid']
+#   placeid_call = placeid(id, api=api)
+#   ## now we can show more details about the business
+
+
+
 if fetch(coords[0])[u'country'][0][1] in apiselect:
     api = apiselect[fetch(coords[0])[u'country'][0][1]]
 else:
@@ -255,5 +286,3 @@ for i in s:
         print " - ", s[i]['phone']
     else:
         print " - "
-
-
