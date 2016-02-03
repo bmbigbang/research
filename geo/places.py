@@ -8,6 +8,7 @@ import oauth2
 client = pymongo.MongoClient()
 places_db = client['test-places']
 placeid_db = client['test-placeid']
+geogrid = client['geogrid']
 
 apimap = {'facebook':
               {'search':
@@ -59,6 +60,15 @@ apimap = {'facebook':
                'detail': {}
                }
           }
+
+apiselect = {"Argentina": "yelp", "Australia": "yelp", "Austria": "yelp", "Belgium": "yelp", "Brazil": "yelp",
+             "Canada": "yelp", "Chile": "yelp", "Czech Republic": "yelp", "Denmark": "yelp", "Finland": "yelp",
+             "France": "yelp", "Germany": "yelp", "Hong Kong": "yelp", "Italy": "yelp", "Japan": "yelp",
+             "Malaysia": "yelp", "Mexico": "yelp", "New Zealand": "yelp", "Norway": "yelp", "Philippines": "yelp",
+             "Poland": "yelp", "Portugal": "yelp", "Republic of Ireland": "yelp", "Singapore": "yelp",
+             "Spain": "yelp", "Sweden": "yelp", "Switzerland": "yelp", "Taiwan": "yelp", "The Netherlands": "yelp",
+             "Turkey": "yelp", "United States": "yelp", "United Kingdom": "yelp", "Russia": "yandex",
+             "India": "google", "China": "baidu"}
 
 
 def get_oauth(url2, params):
@@ -147,29 +157,26 @@ def placeid(query, api="facebook", language="en"):
     elif apimap[api]['status'] in temp:
         return temp[smap['status']]['error']
 
-print "test search with facebook api for food in 08037 Barcelona Spain]"
-query = "food"
-address = ["08037", "Barcelona", "Spain"]
-coords = locate(address)
-# options need to be integrated here to decide which coords to use
-# also possible to use fetch(coords) via location.py to show countries for each coord.
-# also this option will help decide which places.api to use
-s = places(query, coords[0])
-s = placeid(s[2]['id']+","+s[5]['id'])
-for i in s:
-    print s[i]['name'],
-    if 'phone' in s[i]:
-        print " - ", s[i]['phone']
-    else:
-        print " - "
-print "="*50
+
+def fetch(crds):
+    return geogrid.places.find_one({u"coords": {"$near": crds}})
 
 print "test search with baidu api for food in 北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"
 address = ["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"]
 query = "餐馆"
 coords = locate(address)
-s = places(query, coords[0], api="baidu")
-s = placeid(s[0]['uid']+","+s[1]['uid'], api="baidu")
+
+# options integration example:
+# location = OptionsList(*[fetch(x)[u'city'][0]+unicode(",")+fetch(x)[u'country'][0][1] for x in coords]])
+# response = "found multiple results. Please choose letter"
+# coords = coords[location[0]]
+# ## location needs to be a tuple of the index chosen from options and country eg. (1,"Spain")
+if fetch(coords[0])[u'country'][0][1] in apiselect:
+    api = apiselect[fetch(coords[0])[u'country'][0][1]]
+else:
+    api = "google"
+s = places(query, coords[0], api=api)
+s = placeid(s[0]['uid']+","+s[1]['uid'], api=api)
 for i in s[:2]:
     print i['name'],
     if 'telephone' in i:
@@ -182,7 +189,11 @@ print "test search with yandex api for food in ул. Блохина Санкт-�
 address = ["ул. Блохина", "Санкт-Петербург", "Россия", "197198"]
 query = "ресторан"
 coords = locate(address)
-s = places(query, coords[0], api="yandex", language="ru_RU")
+if fetch(coords[0])[u'country'][0][1] in apiselect:
+    api = apiselect[fetch(coords[0])[u'country'][0][1]]
+else:
+    api = "google"
+s = places(query, coords[0], api=api, language="ru_RU")
 counter = 0
 for x in s:
     for j in x:
@@ -199,9 +210,13 @@ print "test search with google api for food in फायर ब्रिगे�
 address = ["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"]
 query = "भोजनालय"
 coords = locate(address)
-s = places(query, coords[0], api="google", language="hi")
+if fetch(coords[0])[u'country'][0][1] in apiselect:
+    api = apiselect[fetch(coords[0])[u'country'][0][1]]
+else:
+    api = "google"
+s = places(query, coords[0], api=api, language="hi")
 for i in s[:2]:
-    s2 = placeid(i['place_id'], api="google", language="hi")
+    s2 = placeid(i['place_id'], api=api, language="hi")
     print s2['name'],
     if 'formatted_phone_number' in s2:
         print " - ", s2['formatted_phone_number']
@@ -213,7 +228,11 @@ print "test search with yelp api for food in newyork"
 address = ["new york"]
 query = "food"
 coords = locate(address)
-s = places(query, coords[0], api="yelp", language="en")
+if fetch(coords[0])[u'country'][0][1] in apiselect:
+    api = apiselect[fetch(coords[0])[u'country'][0][1]]
+else:
+    api = "google"
+s = places(query, coords[0], api=api, language="en")
 for i in s[:3]:
     print i['name'],
     if 'display_phone' in i:
@@ -222,3 +241,19 @@ for i in s[:3]:
         print " - ", i['phone']
     else:
         print
+print "="*50
+
+print "test search with facebook api for food in 08037 Barcelona Spain"
+query = "food"
+address = ["08037", "Barcelona", "Spain"]
+coords = locate(address)
+s = places(query, coords[0])
+s = placeid(s[2]['id']+","+s[5]['id'])
+for i in s:
+    print s[i]['name'],
+    if 'phone' in s[i]:
+        print " - ", s[i]['phone']
+    else:
+        print " - "
+
+

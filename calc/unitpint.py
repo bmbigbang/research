@@ -40,7 +40,10 @@ def convert(query):
     try:
         return frm.to(ureg[conv])
     except pint.unit.UndefinedUnitError:
-        return "final/to unit error: " + str(pint.unit.UndefinedUnitError)
+        return "from/to unit error: " + str(pint.unit.UndefinedUnitError)
+    except pint.unit.DimensionalityError:
+        return "from/to units are different types: " + str(pint.unit.DimensionalityError)
+
 
 testinput = "24yrds to m"
 print testinput + " => " + str(convert(testinput))
@@ -52,5 +55,6 @@ testinput = "24.2-miles to m"
 print testinput + " => " + str(convert(testinput))
 testinput = "24,2-miles convert m"
 print testinput + " => " + str(convert(testinput))
-
+testinput = "5-kg convert km"
+print testinput + " => " + str(convert(testinput))
 

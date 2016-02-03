@@ -40,14 +40,28 @@ def fetch(crds):
     return geogrid.places.find_one({u"coords": {"$near": crds}})
 
 
-def updategrid(crds, country, query):
-    s = geogrid.places.find_one({u"coords": {"$near": crds}})[u'_id']
+def updategrid(crds, country, query, postal_code, cache_city):
+    s = geogrid.places.find_one({u"coords": {"$near": crds}})
+    if not country or country in s[u'country']:
+        country = s[u'country']
+    else:
+        country = s[u'country'] + [country]
+    if not postal_code or postal_code in s[u'postcode']:
+        postal_code = s[u'postcode']
+    else:
+        postal_code = s[u'postcode'] + [postal_code]
+    if not cache_city or cache_city in s[u'city']:
+        cache_city = s[u'city']
+    else:
+        cache_city = s[u'city'] + [cache_city]
     geogrid.places.update_one(
-        {u"_id": s},
+        {u"_id": s[u'_id']},
         {
             "$set": {
-                "country": country,
-                "query": query
+                u"country": country,
+                u"query": query,
+                u'city': cache_city,
+                u'postcode': postal_code
             }
         }
     )
@@ -281,14 +295,15 @@ def locate(address):
                 geogrident = fetch(coords)
                 if geogrident[u'coords'] not in coordlist:
                     coordlist.append(geogrident[u'coords'])
+                country, postal_code, cache_city = "", "", ""
                 for z in y['address_components']:
                     if 'country' in z['types']:
                         country = [z['short_name'], z['long_name']]
-                if u'country' in geogrident and country not in geogrident[u'country']:
-                    country = geogrident[u'country'] + country
-                    updategrid(coords, country, query)
-                else:
-                    updategrid(coords, [country], query)
+                    if 'postal_code' in z['types']:
+                        postal_code = z['long_name']
+                    if 'locality' in z['types']:
+                        cache_city = z['long_name']
+                updategrid(coords, country, query, postal_code, cache_city)
             add_coords(geohashq, coordlist)
             return coordlist
         else:
