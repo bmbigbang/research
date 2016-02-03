@@ -2,8 +2,8 @@
 
 from location import locate
 import pymongo
-import json
 import requests
+import oauth2
 
 client = pymongo.MongoClient()
 places_db = client['test-places']
@@ -48,8 +48,35 @@ apimap = {'facebook':
                'key': "AIzaSyAgcnAoMCuhgMwXLXwRuGiEZmP0T-oWCRM", 'lang': 'language',
                'detail': {'url': 'details/json', 'query': 'placeid', 'results': 'result',
                           'status': 'status', 'error': 'message'}
+               },
+          'yelp':
+              {'search':
+                   {'query': 'term', 'coords': 'll', 'radius': 'radius_filter', 'type': '',
+                    'typearg': 'category_filter', 'url': 'search', 'results': 'businesses',
+                    'status': 'error', 'error': 'error'},
+               'base': 'https://api.yelp.com/v2/', 'lang': 'lang', 'keyarg': "a",
+               'key': "a",
+               'detail': {}
                }
           }
+
+
+def get_oauth(url2, params):
+    token = "B_tlIPNV3RYOu5GcnZYNq-9k8xnOxh7v"
+    token_secret = "BT17FANGBppaDUuG9zzrspCzHB0"
+    consumer_key = "XHQSu_eqPq7o5YNvWWozxg"
+    consumer_secret = "gN2lqgKLA3psc_0UfBPplqsQN5g"
+    oauth_consumer = oauth2.Consumer(key=consumer_key, secret=consumer_secret)
+    oparams = {'oauth_nonce': oauth2.generate_nonce(),
+               'oauth_consumer_key': consumer_key,
+               'oauth_token': token,
+               'oauth_timestamp': oauth2.generate_timestamp()}
+
+    oauth_token = oauth2.Token(key=token, secret=token_secret)
+    req = oauth2.Request(method='GET', parameters=params, url=url2)
+    req.update(oparams)
+    req.sign_request(oauth2.SignatureMethod_HMAC_SHA1(), oauth_consumer, oauth_token)
+    return req.to_url()
 
 
 def places(query, coords, api="facebook", radius=5000, language="en"):
@@ -74,6 +101,11 @@ def places(query, coords, api="facebook", radius=5000, language="en"):
         params.update({'output': apimap[api]['output']})
     if 'lang' in apimap[api]:
         params.update({apimap[api]['lang']: language})
+    if api == "yelp":
+        # headers = {'User-Agent': "ONEm Communications Ltd"}
+        del params[apimap[api]['keyarg']]
+        url = get_oauth(url, params)
+        params = {}
 
     r_call = requests.get(url, params)
     print r_call.url
@@ -115,10 +147,7 @@ def placeid(query, api="facebook", language="en"):
     elif apimap[api]['status'] in temp:
         return temp[smap['status']]['error']
 
-
-
-
-
+print "test search with facebook api for food in 08037 Barcelona Spain]"
 query = "food"
 address = ["08037", "Barcelona", "Spain"]
 coords = locate(address)
@@ -126,15 +155,16 @@ coords = locate(address)
 # also possible to use fetch(coords) via location.py to show countries for each coord.
 # also this option will help decide which places.api to use
 s = places(query, coords[0])
-s = placeid(s[0]['id']+","+s[1]['id'])
+s = placeid(s[2]['id']+","+s[5]['id'])
 for i in s:
     print s[i]['name'],
     if 'phone' in s[i]:
         print " - ", s[i]['phone']
     else:
         print " - "
+print "="*50
 
-
+print "test search with baidu api for food in 北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"
 address = ["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"]
 query = "餐馆"
 coords = locate(address)
@@ -146,8 +176,9 @@ for i in s[:2]:
         print " - ", i['telephone']
     else:
         print " - "
+print "="*50
 
-
+print "test search with yandex api for food in ул. Блохина Санкт-Петербург Россия 197198"
 address = ["ул. Блохина", "Санкт-Петербург", "Россия", "197198"]
 query = "ресторан"
 coords = locate(address)
@@ -162,8 +193,9 @@ for x in s:
             pass
     if counter == 2:
         break
+print "="*50
 
-
+print "test search with google api for food in फायर ब्रिगेड लेन बाराखंबा रो कनॉट प्लेस नई दिल्ल 110001"
 address = ["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"]
 query = "भोजनालय"
 coords = locate(address)
@@ -175,5 +207,18 @@ for i in s[:2]:
         print " - ", s2['formatted_phone_number']
     else:
         print " - "
+print "="*50
 
-
+print "test search with yelp api for food in newyork"
+address = ["new york"]
+query = "food"
+coords = locate(address)
+s = places(query, coords[0], api="yelp", language="en")
+for i in s[:3]:
+    print i['name'],
+    if 'display_phone' in i:
+        print " - ", i['display_phone']
+    elif 'phone' in i:
+        print " - ", i['phone']
+    else:
+        print
