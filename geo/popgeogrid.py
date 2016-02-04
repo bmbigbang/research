@@ -9,7 +9,7 @@ f.close()
 
 client = pymongo.MongoClient()
 db = client['geogrid'].places
-# create index for text search
+# create index for coord search
 db.create_index([("coords", GEO2D)])
 
 for x in geogrid:
