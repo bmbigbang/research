@@ -161,8 +161,8 @@ def placeid(query, api="facebook", language="en"):
         return temp[smap['status']]['error']
 
 
-def fetch(crds):
-    return geogrid.places.find_one({u"coords": {"$near": crds}})
+def geoentry(crds):
+    return geogrid.places.find_one({u"coords": crds})
 
 print "test search with baidu api for food in 北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"
 address = ["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"]
@@ -172,19 +172,19 @@ coords = locate(address)
 # options integration example:
 #
 # if len(coords) > 1 and not location:
-#   location = OptionsList(*[fetch(x)[u'city'][0]+unicode(",")+fetch(x)[u'country'][0][1] for x in coords])
+#   location = OptionsList(*[geoentry(x)[u'city'][0]+unicode(",")+geoentry(x)[u'country'][0][1] for x in coords])
 #   response = "found multiple results. Please choose letter"
 # elif len(coords) > 1 and location:
 #   chosen_location = location.get_option_index(first_bit)
 #   coords = coords[chosen_location]
-#   country = fetch(coords)[u'country'][0][1]
+#   country = geoentry(coords)[u'country'][0][1]
 # else:
 #   coords = coords[0]
-#   country = fetch(coords)[u'country'][0][1]
+#   country = geoentry(coords)[u'country'][0][1]
 
 # then we choose the api to use based on their country:
-# if fetch(coords[0])[u'country'][0][1] in apiselect:
-#    api = apiselect[fetch(coords[0])[u'country'][0][1]]
+# if geoentry(coords[0])[u'country'][0][1] in apiselect:
+#    api = apiselect[geoentry(coords[0])[u'country'][0][1]]
 #else:
 #    api = "google"
 
@@ -201,9 +201,8 @@ coords = locate(address)
 #   ## now we can show more details about the business
 
 
-
-if fetch(coords[0])[u'country'][0][1] in apiselect:
-    api = apiselect[fetch(coords[0])[u'country'][0][1]]
+if geoentry(coords[0])[u'country'][0][1] in apiselect:
+    api = apiselect[geoentry(coords[0])[u'country'][0][1]]
 else:
     api = "google"
 s = places(query, coords[0], api=api)
@@ -220,8 +219,8 @@ print "test search with yandex api for food in ул. Блохина Санкт-�
 address = ["ул. Блохина", "Санкт-Петербург", "Россия", "197198"]
 query = "ресторан"
 coords = locate(address)
-if fetch(coords[0])[u'country'][0][1] in apiselect:
-    api = apiselect[fetch(coords[0])[u'country'][0][1]]
+if geoentry(coords[0])[u'country'][0][1] in apiselect:
+    api = apiselect[geoentry(coords[0])[u'country'][0][1]]
 else:
     api = "google"
 s = places(query, coords[0], api=api, language="ru_RU")
@@ -241,8 +240,8 @@ print "test search with google api for food in फायर ब्रिगे�
 address = ["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"]
 query = "भोजनालय"
 coords = locate(address)
-if fetch(coords[0])[u'country'][0][1] in apiselect:
-    api = apiselect[fetch(coords[0])[u'country'][0][1]]
+if geoentry(coords[0])[u'country'][0][1] in apiselect:
+    api = apiselect[geoentry(coords[0])[u'country'][0][1]]
 else:
     api = "google"
 s = places(query, coords[0], api=api, language="hi")
@@ -259,8 +258,8 @@ print "test search with yelp api for food in newyork"
 address = ["new york"]
 query = "food"
 coords = locate(address)
-if fetch(coords[0])[u'country'][0][1] in apiselect:
-    api = apiselect[fetch(coords[0])[u'country'][0][1]]
+if geoentry(coords[0])[u'country'][0][1] in apiselect:
+    api = apiselect[geoentry(coords[0])[u'country'][0][1]]
 else:
     api = "google"
 s = places(query, coords[0], api=api, language="en")

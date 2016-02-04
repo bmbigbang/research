@@ -33,6 +33,7 @@ def convert(query):
     frmdgts = float(u"".join([i.replace(u",", u"") for i in frm if i.isdigit() or i in u",."]))
     frmunits = u"".join([i for i in frm if i.isalpha()])
     conv = query.replace(frm, u"").replace(u"to", u"").strip()
+    print frmunits,conv
     try:
         frm = frmdgts * ureg[frmunits]
     except pint.unit.UndefinedUnitError:
@@ -56,5 +57,7 @@ print testinput + " => " + str(convert(testinput))
 testinput = "24,2-miles convert m"
 print testinput + " => " + str(convert(testinput))
 testinput = "5-kg convert km"
+print testinput + " => " + str(convert(testinput))
+testinput = "5-kg/m convert g/m"
 print testinput + " => " + str(convert(testinput))
 

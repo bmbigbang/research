@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from misc import params, postcode, getlastnest
+from misc import postcode, getlastnest
 import json
 import pymongo
 import requests
@@ -29,7 +29,17 @@ f.close()
 # f.close()
 
 
-def get_geo(prms):
+def get_geo(addr):
+    prms = {'key': "AIzaSyAgcnAoMCuhgMwXLXwRuGiEZmP0T-oWCRM", 'address': "+".join(addr),
+            'lang': 'en'}
+    ##  'region': "uk", 'components': "country:GB", 'language': "en"}
+    ## region is ccTLD code more info here:
+    ## https://en.wikipedia.org/wiki/List_of_Internet_top-level_domains
+    ## componenets can be country or two letter country code ISO 3166-1 more info here:
+    ## https://en.wikipedia.org/wiki/ISO_3166-1
+    ## language is an optional two letter code from following list:
+    ## https://developers.google.com/maps/faq#languagesupport
+    ## optional parameter
     base = "https://maps.googleapis.com/maps/api/geocode/json"
     r_call = requests.get(base, prms)
     print r_call.url
@@ -285,7 +295,7 @@ def locate(address):
     query = " ".join(address).lower().decode("utf-8").replace(u".", u"\uff0e")
     query, post, city = rearrange(query)
     if not lookup_coords(query, post, city):
-        temp = get_geo(params(address))
+        temp = get_geo(address)
         if temp['status'] == u'OK':
             updatecache(query, temp['results'])
             geohashq = hashq(query, post, city)
@@ -311,7 +321,7 @@ def locate(address):
     return lookup_coords(query, post, city)
 
 
-# print ["08037", "Barcelona", "Spain"], locate(["08037", "Barcelona", "Spain"])
+print ["08037", "Barcelona", "Spain"], locate(["08037", "Barcelona", "Spain"])
 # print ["Barcelona", "Spain", "08037"], locate(["Barcelona", "Spain", "08037"])
 # print ["london"], locate(["london"])
 # print ['Saint', 'Petersburg', 'Blohina', 'ulitsa'], locate(['Saint', 'Petersburg', 'Blohina', 'ulitsa'])

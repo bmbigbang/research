@@ -26,19 +26,6 @@ def pop_dec(inp, n=6):
             t.append((0,0))
     return t
 
-def params(addr):
-    prms = {'key': "AIzaSyAgcnAoMCuhgMwXLXwRuGiEZmP0T-oWCRM", 'address': "+".join(addr),
-            'lang': 'en'}
-    ##  'region': "uk", 'components': "country:GB", 'language': "en"}
-    ## region is ccTLD code more info here:
-    ## https://en.wikipedia.org/wiki/List_of_Internet_top-level_domains
-    ## componenets can be country or two letter country code ISO 3166-1 more info here:
-    ## https://en.wikipedia.org/wiki/ISO_3166-1
-    ## language is an optional two letter code from following list:
-    ## https://developers.google.com/maps/faq#languagesupport
-    ## optional parameter
-    return prms
-
 
 def closest(vec, nest):
     s = {}
