@@ -13,20 +13,22 @@ geohashp = client['test-geohashp']
 geohashc = client['test-geohashc']
 geogrid = client['geogrid']
 
-
+# citiesdb is english only dictionary database of city nameds, populated by cities.py and used in cities(query)
+# query has same format as input of locate(address)
 f = open("cities.txt", "rb")
 citiesdb = json.load(f)
 f.close()
 
 # IAPIHandler needs these methods: fetch(crds), updategrid(crds, country, query, postal_code, cache_city),
 # hashq(query, findpost, findcities), rearrange(query), add_coords(query, coords), lookup_coords(query, findpost, findcities):
-# hashq and lookup_coords depend on rearrange and cities+postcode are calling inside rearrange
+# hashq and lookup_coords depend on rearrange and cities+postcode are called inside rearrange
 # SAPIHandler needs these methods: get_geo(addr), get_oauth(url2, params),
 #  places(query, coords, api="facebook", radius=5000, language="en"), placeid(query, api="facebook", language="en")
-# language should be included with all place calls based on the charset used.
+# language should be included with all place calls, default is "en"
 
 
 def get_geo(addr):
+    # addr has the same formatting as input of locate(address)
     prms = {'key': "AIzaSyAgcnAoMCuhgMwXLXwRuGiEZmP0T-oWCRM", 'address': "+".join(addr),
             'lang': 'en'}
     #  'region': "uk", 'components': "country:GB", 'language': "en"}
@@ -44,10 +46,16 @@ def get_geo(addr):
 
 
 def fetch(crds):
+    # takes as input an array of coords [longitude,lattitude] with floats as items
+    # returns closest coordinate entry in geogrid
     return geogrid.places.find_one({u"coords": {"$near": crds}})
 
 
 def updategrid(crds, country, query, postal_code, cache_city):
+    # takes in crds as an array of crds [longitude,lattitude] with floats as items
+    # country is the geocache entry corresponding to crds's country
+    # postal_code is the geocache entry corresponding to crds's postcal_code
+    # cached_city is the geocache entry corresponding to crds's city
     s = geogrid.places.find_one({u"coords": {"$near": crds}})
     if not country or country in s[u'country']:
         country = s[u'country']
@@ -75,6 +83,8 @@ def updategrid(crds, country, query, postal_code, cache_city):
 
 
 def updatecache(query, results):
+    # takes as input a rearranged query with same formatting as locate(address)'s input, but rearranged.
+    # results is a json response from geocoder after successful call.
     entry = {u'query': query,
              u'results': results,
              u'updated': time.ctime(time.time())}
@@ -82,6 +92,7 @@ def updatecache(query, results):
 
 
 def cities(query):
+    # takes in query with same formatting as locate(address)'s input and returns any matching cities as an array
     parts = re.split(ur"\s", query, flags=re.U)
     foundcities = []
     for x in parts:
@@ -130,6 +141,7 @@ def cities(query):
 
 
 def postcode(query):
+    # takes in query with same formatting as locate(address)'s input and returns any postcodes as an array
     # split codes need to be checked for at least two digits
     split_postcodes = re.compile(ur"(?<![\w\.])\w{2,5}[\- ]\w{2,4}(?![\w\.])", flags=re.U|re.I)
     split_postcodes = [i for i in re.findall(split_postcodes, query) if len(re.findall(r'\d', i)) > 1]
@@ -145,6 +157,7 @@ def postcode(query):
 
 
 def getlastnest(nest):
+    # takes as input a sub dict of citiesdb and returns the closest ending cityname. else returns false
     letters = ""
     for x in nest:
         if unicode("*|") in nest[x]:
@@ -161,6 +174,11 @@ def getlastnest(nest):
 
 
 def hashq(query, findpost, findcities):
+    # takes as input a rearranged query with same formatting as locate('address'), and findpost/findcities performed
+    # previously via rearrange(query). it populates empty entries in geohash/geohashp/geohashc
+    # returns array of [findpost,findcities,query letters], if findpost
+    #                  [findcities, query letters], if findcities and not findpost
+    #                  [query letters] otherwise
     if findpost:
         temp6 = geohashp
         for x in findpost + findcities:
@@ -216,6 +234,8 @@ def hashq(query, findpost, findcities):
 
 
 def rearrange(query):
+    # takes as input query with same formatting as locate('address'), uses cities/postcode to find and rearrange
+    # key inputs, returns results of all searches and rearranged query.
     query = query.lower()
     findpost = postcode(query)
     if findpost:
@@ -237,6 +257,8 @@ def rearrange(query):
 
 
 def add_coords(query, coords):
+    ## takes as input result of hashq(query) and coords as array of two floats and adds the found coordinates
+    ## to the final nest of geohash/geohashp/geohashc (db)
     if len(query) == 3:
         temp8 = geohashp
         temp14 = temp8.posts.find_one({u"query": query[0][0]})
@@ -267,6 +289,8 @@ def add_coords(query, coords):
 
 
 def lookup_coords(query, findpost, findcities):
+    # takes as input the result of rearrange(query) and returns the stored coordinates from the relevant database,
+    # provided such entry exists, or False otherwise
     if findpost:
         for x in findpost + findcities:
             query = re.sub(ur"{0}".format(x), u"", query, flags=re.U)
@@ -320,6 +344,8 @@ def lookup_coords(query, findpost, findcities):
 
 
 def locate(address):
+    # takes as input an array of string/s and calls the geocoder if no such entry exists.
+    # returns list of coords the geocoder returned as long as they are distinct in geogrid.
     query = " ".join(address).lower().decode("utf-8").replace(u".", u"\uff0e")
     query, post, city = rearrange(query)
     if not lookup_coords(query, post, city):

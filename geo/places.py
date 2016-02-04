@@ -93,6 +93,10 @@ def get_oauth(url2, params):
 
 
 def places(query, coords, api="facebook", radius=5000, language="en"):
+    # takes as input query (string) as the main term to search for using apicall, array of floats as
+    # coords [longitude, lattitude], api as the apimap parameter to use and radius as int in meters for radial search
+    # language formatting differs in support and formatting for each api, defaults to "en"
+    # returns the list of businesses found or similar
     query = query.decode("utf-8").lower().replace(u".", u"\uff0e")
     if api == "yandex":
         radius = str((radius/1000)/111.32)[:7]+","+str((radius/1000)/111.32)[:7]
@@ -131,6 +135,11 @@ def places(query, coords, api="facebook", radius=5000, language="en"):
 
 
 def placeid(query, api="facebook", language="en"):
+    # takes as input query bussiness id as (string) or a comma seperated list of id's as a string
+    # of the busineess/es to search for using the apicall
+    # api as the apimap parameter to use, language formatting differs in support and formatting for
+    # each api, defaults to "en". returns the details for business/es found or similar
+    # warning! not all api's support this feature
     search = placeid_db.posts.find_one({u"query": query, u"api": api})
     if search:
         return search[u"results"]
@@ -162,6 +171,7 @@ def placeid(query, api="facebook", language="en"):
 
 
 def geoentry(crds):
+    # takes crds as input an array of floats [longitude,lattitude] and returns geogrid entry for that coord
     return geogrid.places.find_one({u"coords": crds})
 
 print "test search with baidu api for food in 北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"
