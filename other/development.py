@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import ujson
-from misc import repeat, getlastnest, postcode
-from math import sqrt
-import operator
 import re
+import ujson
+
 import pymongo
+
+from other.misc import repeat, getlastnest, postcode
 
 # f = open("geocache.txt", "rb")
 # geocache = ujson.load(f)

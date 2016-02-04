@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from misc import postcode, getlastnest
 import json
 import pymongo
 import requests
@@ -18,28 +17,26 @@ geogrid = client['geogrid']
 f = open("cities.txt", "rb")
 citiesdb = json.load(f)
 f.close()
-# f = open("geocache.txt", "rb")
-# geocache = json.load(f)
-# f.close()
-# f = open("geohash.txt", "rb")
-# geohash = json.load(f)
-# f.close()
-# f = open("geogrid2.txt", "rb")
-# geogrid = json.load(f)
-# f.close()
+
+# IAPIHandler needs these methods: fetch(crds), updategrid(crds, country, query, postal_code, cache_city),
+# hashq(query, findpost, findcities), rearrange(query), add_coords(query, coords), lookup_coords(query, findpost, findcities):
+# hashq and lookup_coords depend on rearrange and cities+postcode are calling inside rearrange
+# SAPIHandler needs these methods: get_geo(addr), get_oauth(url2, params),
+#  places(query, coords, api="facebook", radius=5000, language="en"), placeid(query, api="facebook", language="en")
+# language should be included with all place calls based on the charset used.
 
 
 def get_geo(addr):
     prms = {'key': "AIzaSyAgcnAoMCuhgMwXLXwRuGiEZmP0T-oWCRM", 'address': "+".join(addr),
             'lang': 'en'}
-    ##  'region': "uk", 'components': "country:GB", 'language': "en"}
-    ## region is ccTLD code more info here:
-    ## https://en.wikipedia.org/wiki/List_of_Internet_top-level_domains
-    ## componenets can be country or two letter country code ISO 3166-1 more info here:
-    ## https://en.wikipedia.org/wiki/ISO_3166-1
-    ## language is an optional two letter code from following list:
-    ## https://developers.google.com/maps/faq#languagesupport
-    ## optional parameter
+    #  'region': "uk", 'components': "country:GB", 'language': "en"}
+    # region is ccTLD code more info here:
+    # https://en.wikipedia.org/wiki/List_of_Internet_top-level_domains
+    # componenets can be country or two letter country code ISO 3166-1 more info here:
+    # https://en.wikipedia.org/wiki/ISO_3166-1
+    # language is an optional two letter code from following list:
+    # https://developers.google.com/maps/faq#languagesupport
+    # optional parameter
     base = "https://maps.googleapis.com/maps/api/geocode/json"
     r_call = requests.get(base, prms)
     print r_call.url
@@ -130,6 +127,37 @@ def cities(query):
         if counter <= 3:
             foundcities.append((letters, x, counter))
     return foundcities
+
+
+def postcode(query):
+    # split codes need to be checked for at least two digits
+    split_postcodes = re.compile(ur"(?<![\w\.])\w{2,5}[\- ]\w{2,4}(?![\w\.])", flags=re.U|re.I)
+    split_postcodes = [i for i in re.findall(split_postcodes, query) if len(re.findall(r'\d', i)) > 1]
+    found = " ".join(split_postcodes)
+    # num codes need to not be splits
+    num_postcodes = re.compile(ur"(?<![\w\.])\d{4,10}(?![\w\.])", flags=re.U)
+    num_postcodes = [i for i in re.findall(num_postcodes, query) if found.find(i) == -1]
+    found += " ".join(num_postcodes)
+    # split type postcodes without delimiter are looked for except the pure number ones
+    split_joined_postcodes = re.compile(ur"(?<![\w\.])\w{2}\d{3,6}(?![\w\.])", flags=re.U|re.I)
+    split_joined_postcodes = [i for i in re.findall(split_joined_postcodes, query) if found.find(i) == -1]
+    return split_postcodes + num_postcodes + split_joined_postcodes
+
+
+def getlastnest(nest):
+    letters = ""
+    for x in nest:
+        if unicode("*|") in nest[x]:
+            letters += x
+            return letters
+        temp = nest.get(x)
+        if not temp:
+            continue
+        for y in temp:
+            if unicode("*|") in temp[y]:
+                letters += x+y
+                return letters
+    return False
 
 
 def hashq(query, findpost, findcities):
@@ -321,7 +349,7 @@ def locate(address):
     return lookup_coords(query, post, city)
 
 
-print ["08037", "Barcelona", "Spain"], locate(["08037", "Barcelona", "Spain"])
+# print ["08037", "Barcelona", "Spain"], locate(["08037", "Barcelona", "Spain"])
 # print ["Barcelona", "Spain", "08037"], locate(["Barcelona", "Spain", "08037"])
 # print ["london"], locate(["london"])
 # print ['Saint', 'Petersburg', 'Blohina', 'ulitsa'], locate(['Saint', 'Petersburg', 'Blohina', 'ulitsa'])
