@@ -268,6 +268,7 @@ print "test search with yelp api for food in newyork"
 address = ["new york"]
 query = "food"
 coords = locate(address)
+
 if geoentry(coords[0])[u'country'][0][1] in apiselect:
     api = apiselect[geoentry(coords[0])[u'country'][0][1]]
 else:
