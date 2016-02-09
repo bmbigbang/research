@@ -27,13 +27,16 @@ def convert(query):
         if x in unitdict:
             query = query.replace(x, unitdict[x])
 
-    pattern = re.compile(ur"\b\S*\d[\s\-]?[a-z]\S*\b", flags=re.U|re.I)
+    pattern = re.compile(ur"\b\S*\d[\s\-]?[a-z\/]\S*\b", flags=re.U|re.I)
     frm = re.search(pattern, query)
     frm = query[frm.start():frm.end()]
     frmdgts = float(u"".join([i.replace(u",", u"") for i in frm if i.isdigit() or i in u",."]))
-    frmunits = u"".join([i for i in frm if i.isalpha()])
+    frmunits = u"".join([i for i in frm if i.isalpha() or i in u"\/^"])
+    if u"^" in frmunits:
+        pos = frmunits.find(u"^")
+        frmunits = frmunits[:pos+1] + frm[frm.find(u"^")+1] + frmunits[pos+1:]
     conv = query.replace(frm, u"").replace(u"to", u"").strip()
-    print frmunits,conv
+
     try:
         frm = frmdgts * ureg[frmunits]
     except pint.unit.UndefinedUnitError:
@@ -59,5 +62,7 @@ print testinput + " => " + str(convert(testinput))
 testinput = "5-kg convert km"
 print testinput + " => " + str(convert(testinput))
 testinput = "5-kg/m convert g/m"
+print testinput + " => " + str(convert(testinput))
+testinput = "5-kg^2/m convert g^2/m"
 print testinput + " => " + str(convert(testinput))
 

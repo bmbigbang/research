@@ -227,8 +227,8 @@ for x in testquery[:5]:
         testquery2[u'country'].title(), "- Airline:", airline(x[u'flight'])[1]
     print "-" * 50
 
-print "Flight check test with U2 6748 (this is date sensitive)"
-tq = flight("U2 6704")
+print "Flight check test with AC 859 (this is date sensitive)"
+tq = flight("AC 859")
 if u'flightStatuses' in tq:
     tq = tq[u'flightStatuses']
     if not tq:
@@ -245,9 +245,10 @@ tq2 = airport(tq["arrivalAirportFsCode"], detail=True)
 print "To", tq2[u'name'].title() + ",", tq2[u'city'].title() + ",", tq2[u'country'].title()
 print "Departure Date:", tq['departureDate']['dateLocal'], "Local,", tq['departureDate']['dateUtc'], "UTC"
 print "Arrival Date:", tq['arrivalDate']['dateLocal'], "Local,", tq['arrivalDate']['dateUtc'], "UTC"
+print "-" * 50
 
-print "Flight check test with LH 925 on 4 feb 16"
-tq = flight("LH 925", date=u'4 feb 16')
+print "Flight check test with LH 925 on 10 feb 16"
+tq = flight("LH 925", date=u'10 feb 16')
 if u'flightStatuses' in tq:
     tq = tq[u'flightStatuses']
     if not tq:
