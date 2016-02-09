@@ -11,7 +11,7 @@ def parse(date):
     date = date.replace(u',', u'').split()
     for x in range(len(date), 0, -1):
         for y in itertools.combinations(date, x):
-            if dateparser.parse(u" ".join(y)):
+            if dateparser.parse(u" ".join(y), languages=['en', 'fr', 'ru']):
                 return dateparser.parse(u" ".join(y))
     return results
 
