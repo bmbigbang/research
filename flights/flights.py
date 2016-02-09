@@ -170,7 +170,9 @@ def airportFIDS(airp, direction):
 def flight(flightid, date=u""):
     if not airline(flightid):
         return "Error with flight ID - airline check"
-    flightid = flightid.split()
+    flightno = re.search(ur'\d', flightid, flags=re.U)
+    flightid = [airline(flightid)[0], flightid[flightno.start():]]
+    print flightid
     year = time.strftime("%Y")
     month = time.strftime("%m")
     day = time.strftime("%d")
@@ -211,7 +213,7 @@ def flight(flightid, date=u""):
 
 bufr = cStringIO.StringIO()
 c = pycurl.Curl()
-
+print "=" * 50
 testquery = airportFIDS(airport("belfast intl"), "departures")[u'fidsData']
 for x in testquery[:5]:
     print "Flight ID:", x[u'flight'] + ", set for departure at:", x[u'scheduledTime'], ", is", x[u'remarks']
@@ -219,6 +221,7 @@ for x in testquery[:5]:
     print "Destination:", testquery2[u'name'].title() + ",", testquery2[u'city'].title() + ",", \
         testquery2[u'country'].title(), "- Airline:", airline(x[u'flight'])[1]
     print "-" * 50
+print "=" * 50
 testquery = airportFIDS(airport("fast"), "arrivals")[u'fidsData']
 for x in testquery[:5]:
     print "Flight ID:", x[u'flight'] + ", set for arrival at:", x[u'scheduledTime'], ", is", x[u'remarks']
@@ -226,7 +229,7 @@ for x in testquery[:5]:
     print "Destination:", testquery2[u'name'].title() + ",", testquery2[u'city'].title() + ",", \
         testquery2[u'country'].title(), "- Airline:", airline(x[u'flight'])[1]
     print "-" * 50
-
+print "=" * 50
 print "Flight check test with AC 859 (this is date sensitive)"
 tq = flight("AC 859")
 if u'flightStatuses' in tq:
@@ -237,6 +240,7 @@ if u'flightStatuses' in tq:
         tq = tq[0]
 else:
     print "api call was not completed or database has incorrect entry"
+
 print "Flight ID:", tq["carrierFsCode"], tq["flightNumber"], "- Flight Duration:",\
     tq["flightDurations"]["scheduledBlockMinutes"], "Minutes"
 tq2 = airport(tq["departureAirportFsCode"], detail=True)
