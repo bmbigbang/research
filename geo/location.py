@@ -29,8 +29,7 @@ f.close()
 
 def get_geo(addr):
     # addr has the same formatting as input of locate(address)
-    prms = {'key': "AIzaSyAgcnAoMCuhgMwXLXwRuGiEZmP0T-oWCRM", 'address': "+".join(addr),
-            'lang': 'en'}
+    prms = {'key': "0FhyxqvJsyn9dzYwoYCZA8iuqAoIcJ72", 'location': "+".join(addr)}
     #  'region': "uk", 'components': "country:GB", 'language': "en"}
     # region is ccTLD code more info here:
     # https://en.wikipedia.org/wiki/List_of_Internet_top-level_domains
@@ -39,8 +38,8 @@ def get_geo(addr):
     # language is an optional two letter code from following list:
     # https://developers.google.com/maps/faq#languagesupport
     # optional parameter
-    base = "https://maps.googleapis.com/maps/api/geocode/json"
-    r_call = requests.get(base, prms)
+    base = "http://www.mapquestapi.com/geocoding/v1/address"
+    r_call = requests.post(base, prms)
     print r_call.url
     return r_call.json()
 
@@ -247,12 +246,6 @@ def rearrange(query):
         for x in findcities:
             query = re.sub(ur"{0}".format(x), u"", query, flags=re.U).strip()
             query = re.sub(ur"  ", u" ", query, flags=re.U)
-        if findpost:
-            query = " ".join(findpost) + " " + " ".join(findcities) + " " + query
-        else:
-            query = " ".join(findcities) + " " + query
-    elif findpost:
-        query = " ".join(findpost) + " " + query
     return query, findpost, findcities
 
 
@@ -351,28 +344,27 @@ def locate(address):
     query, post, city = rearrange(query)
     if not lookup_coords(query, post, city):
         temp = get_geo(address)
-        if temp['status'] == u'OK':
-            updatecache(query, temp['results'])
+        if not temp['info']['messages']:
+            updatecache(query, temp['results'][0]['locations'])
             geohashq = hashq(query, post, city)
             coordlist = []
-            for y in temp['results']:
-                coords = (float(y['geometry']['location']['lng']), float(y['geometry']['location']['lat']))
+            for y in temp['results'][0]['locations']:
+                coords = (float(y['latLng']['lng']), float(y['latLng']['lat']))
                 geogrident = fetch(coords)
                 if geogrident[u'coords'] not in coordlist:
                     coordlist.append(geogrident[u'coords'])
                 country, postal_code, cache_city = "", "", ""
-                for z in y['address_components']:
-                    if 'country' in z['types']:
-                        country = [z['short_name'], z['long_name']]
-                    if 'postal_code' in z['types']:
-                        postal_code = z['long_name']
-                    if 'locality' in z['types']:
-                        cache_city = z['long_name']
+                if 'adminArea1' in y:
+                    country = y['adminArea1']
+                if 'postalCode' in y:
+                    postal_code = y['postalCode']
+                if 'adminArea3' in y:
+                    cache_city = y['adminArea3']
                 updategrid(geogrident[u'coords'], country, query, postal_code, cache_city)
             add_coords(geohashq, coordlist)
             return coordlist
         else:
-            return temp
+            return temp['info']['messages']
     return lookup_coords(query, post, city)
 
 
@@ -390,4 +382,3 @@ def locate(address):
 # print ["liverpool"], locate(["liverpool"])
 # print ["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"],
 # print locate(["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"])
-

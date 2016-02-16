@@ -64,14 +64,18 @@ apimap = {'facebook':
                }
           }
 
-apiselect = {"Argentina": "yelp", "Australia": "yelp", "Austria": "yelp", "Belgium": "yelp", "Brazil": "yelp",
+apiselect = {"Argentina": "yelp", "AR": "yelp", "Australia": "yelp", "AU": "yelp", "Austria": "yelp", "BE": "yelp",
+             "Belgium": "yelp", "BR": "yelp", "Brazil": "yelp", "CA": "yelp", "CL": "yelp", "CZ": "yelp", "DK": "yelp",
              "Canada": "yelp", "Chile": "yelp", "Czech Republic": "yelp", "Denmark": "yelp", "Finland": "yelp",
-             "France": "yelp", "Germany": "yelp", "Hong Kong": "yelp", "Italy": "yelp", "Japan": "yelp",
+             "FI": "yelp", "FR": "yelp", "DE": "yelp", "HK": "yelp", "IT": "yelp", "JP": "yelp", "MY": "yelp",
+             "France": "yelp", "Germany": "yelp", "Hong Kong": "yelp", "Italy": "yelp", "Japan": "yelp", "MX": "yelp",
+             "NZ": "yelp", "NO": "yelp", "PH": "yelp", "PO": "yelp", "PT": "yelp", "IE": "yelp", "SG": "yelp",
              "Malaysia": "yelp", "Mexico": "yelp", "New Zealand": "yelp", "Norway": "yelp", "Philippines": "yelp",
-             "Poland": "yelp", "Portugal": "yelp", "Republic of Ireland": "yelp", "Singapore": "yelp",
+             "Poland": "yelp", "Portugal": "yelp", "Republic of Ireland": "yelp", "Singapore": "yelp", "ES": "yelp",
+             "CH": "yelp", "TW": "yelp", "NL": "yelp", "TR": "yelp", "US": "yelp", "UK": "yelp", "GB": "yelp",
              "Spain": "yelp", "Sweden": "yelp", "Switzerland": "yelp", "Taiwan": "yelp", "The Netherlands": "yelp",
-             "Turkey": "yelp", "United States": "yelp", "United Kingdom": "yelp", "Russia": "yandex",
-             "India": "google", "China": "baidu"}
+             "Turkey": "yelp", "United States": "yelp", "United Kingdom": "yelp", "Russia": "yandex", "RU": "yandex",
+             "China": "baidu", "CN": "baidu"}
 
 
 def get_oauth(url2, params):
@@ -108,7 +112,7 @@ def places(query, coords, api="facebook", radius=5000, language="en"):
     smap = apimap[api][method]
     url = apimap[api]['base'] + smap['url']
     params = {
-        smap['query']: str(query.encode("utf-8")),
+        smap['query']: query,
         smap['coords']: '{0[1]},{0[0]}'.format(coords),
         smap['radius']: radius,
         smap['typearg']: smap['type'],
@@ -174,10 +178,11 @@ def geoentry(crds):
     # takes crds as input an array of floats [longitude,lattitude] and returns geogrid entry for that coord
     return geogrid.places.find_one({u"coords": crds})
 
-print "test search with baidu api for food in 北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"
-address = ["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"]
-query = "餐馆"
-coords = locate(address)
+# china addresses currently not working correctly
+# print "test search with baidu api for food in 北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"
+# address = ["北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"]
+# query = "餐馆"
+# coords = locate(address)
 
 # options integration example:
 #
@@ -211,19 +216,19 @@ coords = locate(address)
 #   ## now we can show more details about the business
 
 
-if geoentry(coords[0])[u'country'][0][1] in apiselect:
-    api = apiselect[geoentry(coords[0])[u'country'][0][1]]
-else:
-    api = "google"
-s = places(query, coords[0], api=api)
-s = placeid(s[0]['uid']+","+s[1]['uid'], api=api)
-for i in s[:2]:
-    print i['name'],
-    if 'telephone' in i:
-        print " - ", i['telephone']
-    else:
-        print " - "
-print "="*50
+# if geoentry(coords[0])[u'country'][0][1] in apiselect:
+#     api = apiselect[geoentry(coords[0])[u'country'][0][1]]
+# else:
+#     api = "google"
+# s = places(query, coords[0], api=api)
+# s = placeid(s[0]['uid']+","+s[1]['uid'], api=api)
+# for i in s[:2]:
+#     print i['name'],
+#     if 'telephone' in i:
+#         print " - ", i['telephone']
+#     else:
+#         print " - "
+# print "="*50
 
 print "test search with yandex api for food in ул. Блохина Санкт-Петербург Россия 197198"
 address = ["ул. Блохина", "Санкт-Петербург", "Россия", "197198"]
