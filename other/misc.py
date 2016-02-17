@@ -27,6 +27,31 @@ def pop_dec(inp, n=6):
     return t
 
 
+def fetch(crds):
+    p = (int(crds[0]) / 10, int(crds[1]) / 10)
+    if str(p) not in geogrid:
+        vec = sqrt(p[0]**2 + p[1]**2)
+        temp4 = geogrid[closest(vec, geogrid)]
+    else:
+        temp4 = geogrid[str(p)]
+    p = (int(crds[0]) % 10, int(crds[1]) % 10)
+    if str(p) not in temp4:
+        vec = sqrt(p[0]**2 + p[1]**2)
+        temp4 = temp4[closest(vec, temp4)]
+    else:
+        temp4 = temp4[str(p)]
+    temp5 = pop_dec(crds)
+    for z in temp5:
+        if str(z) in temp4:
+            temp4 = temp4.get(str(z))
+        elif u'query' in temp4:
+            return temp4
+        else:
+            vec = sqrt((z[0]**2)+(z[1]**2))
+            temp4 = temp4.get(closest(vec, temp4))
+    return temp4
+
+
 def closest(vec, nest):
     s = {}
     for x in nest:

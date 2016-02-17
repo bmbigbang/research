@@ -5,6 +5,12 @@ import pymongo
 import requests
 import time
 import re
+import cProfile
+import StringIO
+import pstats
+from opencage.geocoder import OpenCageGeocode
+key = "51588f6356d4836fe72f545bacc3dde6"
+geocoder = OpenCageGeocode(key)
 
 client = pymongo.MongoClient()
 geocache = client['geocache']
@@ -343,31 +349,34 @@ def locate(address):
     query = query.replace(u",", u" ").replace(u"  ", u" ")
     query, post, city = rearrange(query)
     if not lookup_coords(query, post, city):
-        temp = get_geo(address)
-        if not temp['info']['messages']:
-            updatecache(query, temp['results'][0]['locations'])
+        temp = geocoder.geocode(query)
+        if temp:
+            updatecache(query, temp)
             geohashq = hashq(query, post, city)
             coordlist = []
-            for y in temp['results'][0]['locations']:
-                coords = (float(y['latLng']['lng']), float(y['latLng']['lat']))
+            for y in temp:
+                coords = (float(y['geometry']['lng']), float(y['geometry']['lat']))
                 geogrident = fetch(coords)
                 if geogrident[u'coords'] not in coordlist:
                     coordlist.append(geogrident[u'coords'])
                 country, postal_code, cache_city = "", "", ""
-                if 'adminArea1' in y:
-                    country = y['adminArea1']
-                if 'postalCode' in y:
-                    postal_code = y['postalCode']
-                if 'adminArea3' in y:
-                    cache_city = y['adminArea3']
+                if 'country' in y['components']:
+                    country = y['components']['country']
+                if 'postcode' in y['components']:
+                    postal_code = y['components']['postcode']
+                if 'locality' in y['components']:
+                    cache_city = y['components']['locality']
                 updategrid(geogrident[u'coords'], country, query, postal_code, cache_city)
             add_coords(geohashq, coordlist)
             return coordlist
         else:
-            return temp['info']['messages']
+            return temp
     return lookup_coords(query, post, city)
 
+pr = cProfile.Profile()
+pr.enable()
 
+print lookup_coords("", ["08037"], ["Barcelona", "Spain"])
 # print ["08037", "Barcelona", "Spain"], locate(["08037", "Barcelona", "Spain"])
 # print ["Barcelona", "Spain", "08037"], locate(["Barcelona", "Spain", "08037"])
 # print ["london"], locate(["london"])
@@ -382,3 +391,10 @@ def locate(address):
 # print ["liverpool"], locate(["liverpool"])
 # print ["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"],
 # print locate(["फायर", "ब्रिगेड", "लेन", "बाराखंबा", "रोड", "कनॉट", "प्लेस", "नई दिल्ली", "110001"])
+
+pr.disable()
+s = StringIO.StringIO()
+sortby = 'cumulative'
+ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+ps.print_stats()
+print s.getvalue()

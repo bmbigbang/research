@@ -127,7 +127,6 @@ def places(query, coords, api="facebook", radius=5000, language="en"):
         del params[apimap[api]['keyarg']]
         url = get_oauth(url, params)
         params = {}
-
     r_call = requests.get(url, params)
     print r_call.url
     temp = r_call.json()
@@ -177,6 +176,19 @@ def placeid(query, api="facebook", language="en"):
 def geoentry(crds):
     # takes crds as input an array of floats [longitude,lattitude] and returns geogrid entry for that coord
     return geogrid.places.find_one({u"coords": crds})
+
+print "test search with facebook api for food in 08037 Barcelona Spain"
+query = "food"
+address = ["08037", "Barcelona", "Spain"]
+s = places(query, [0.12,51.5])
+print s[2]['id']+","+s[5]['id']
+s = placeid(s[2]['id']+","+s[5]['id'])
+for i in s:
+    print s[i]['name'],
+    if 'phone' in s[i]:
+        print " - ", s[i]['phone']
+    else:
+        print " - "
 
 # china addresses currently not working correctly
 # print "test search with baidu api for food in 北京东城区东直门内大街号奇门涮肉坊(簋街总店)对面"
@@ -293,7 +305,7 @@ print "test search with facebook api for food in 08037 Barcelona Spain"
 query = "food"
 address = ["08037", "Barcelona", "Spain"]
 coords = locate(address)
-s = places(query, coords[0])
+s = places(query, [53,0])
 s = placeid(s[2]['id']+","+s[5]['id'])
 for i in s:
     print s[i]['name'],
