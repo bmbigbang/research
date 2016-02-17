@@ -17,15 +17,14 @@ def digit(num, dig):
     return int(str(num)[pos+dig])
 
 
-def nestgen(nest,crd, counter):
+def nestgen(nest, crd, counter):
     tempnest = geohash[temp][temp2]
     for x in range(len(nest)):
         if nest[x] in tempnest:
             if x == 0 and nest[x] == temp2:
                 if len(nest) == 1:
                     counter +=1
-                    tempnest.update({nest[x]: {'updated': "11/01/2016", 'query': {},
-                                               'accessed': 0, 'coords': crd, 'country': []}})
+                    tempnest.update({nest[x]: u"*|"})
                     continue
                 tempnest.update({nest[x]: {}})
                 tempnest = tempnest.get(nest[x])
@@ -36,12 +35,12 @@ def nestgen(nest,crd, counter):
                 tempnest = tempnest.get(nest[x])
         elif x == len(nest)-1 or len(nest) == 1:
             counter+=1
-            tempnest.update({nest[x]: {'updated': "11/01/2016", 'query': {},
-                                       'accessed': 0,'coords': crd, 'country': []}})
+            tempnest.update({nest[x]: u"*|"})
         else:
             tempnest.update({nest[x]: {}})
             tempnest = tempnest.get(nest[x])
     return counter
+
 
 def fetch(coords):
     temp4 = geohash[(int(coords[0]) / 10, int(coords[1]) / 10)]
@@ -51,7 +50,7 @@ def fetch(coords):
         if z in temp4:
             temp4 = temp4.get(z)
             continue
-        elif 'updated' in temp4:
+        elif temp4 == u"*|":
             return temp4
         else:
             return None
@@ -91,7 +90,9 @@ for x in grid:
     if not fetch(x):
         print x
         break
+
 print counter
 f = open("geogrid2.txt", "wb")
 ujson.dump(geohash, f, ensure_ascii=False)
 f.close()
+

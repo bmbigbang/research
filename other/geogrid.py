@@ -9,12 +9,12 @@ with open("urbanareas1_1.tsv", "rb") as csvfile:
             continue
         grid[unicode(str(i[3])+","+str(i[4]))] = [i[0],i[2],i[6]]
     csvfile.close()
-xstep = 360/100.0; tempgrid = {}
+xstep = 360/111.11; tempgrid = {}
 
 def gridder(x1, y1, step, div=3):
     step = step/div; ddense = False
-    for i in np.arange(x1+step/2, x1+(step*div), step):
-        for j in np.arange(y1+step/2,y1+(step*div),step):
+    for i in np.arange(x1 + step/2, x1 + (step*div), step):
+        for j in np.arange(y1 + step/2, y1 + (step*div), step):
             if step > xstep/100:
                 for k in grid:
                     coords = [float(p) for p in k.split(",")]
@@ -28,7 +28,7 @@ def gridder(x1, y1, step, div=3):
                 continue
             tempgrid[(i, j)] = step
    
-dense = False; x=-180.0; y=-90.0
+dense = False; x = -180.0; y = -90.0
 while x < 179.99:
     while y < 89.99:
         for i in grid:
@@ -40,10 +40,10 @@ while x < 179.99:
             grid2[(x+(xstep / 2), y+(xstep / 2))] = xstep
         y += xstep
         dense = False
-    y =- 90
+    y = -90
     x += xstep
 
 
 f = open("geogrid.txt", "wb")
-ujson.dump(grid2, f)
+ujson.dump(grid2, f, ensure_ascii=False)
 f.close()
