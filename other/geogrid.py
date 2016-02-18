@@ -9,9 +9,9 @@ with open("urbanareas1_1.tsv", "rb") as csvfile:
             continue
         grid[unicode(str(i[3])+","+str(i[4]))] = [i[0],i[2],i[6]]
     csvfile.close()
-xstep = 360/111.1; tempgrid = {}
+xstep = 360/1000.0; tempgrid = {}
 
-def gridder(x1, y1, step, div=3):
+def gridder(x1, y1, step, div=4):
     step = step/div; ddense = False
     for i in np.arange(x1 + step/2, x1 + (step*div), step):
         for j in np.arange(y1 + step/2, y1 + (step*div), step):
