@@ -1,7 +1,5 @@
-import ujson
+import json
 from math import sqrt
-
-
 
 class geogrid(dict):
     def __init__(self, grid):
@@ -87,7 +85,7 @@ class geogrid(dict):
 
 
 f = open("geogrid.txt", "rb")
-grid = ujson.load(f)
+grid = json.load(f)
 f.close()
 
 grid2 = geogrid(grid)
