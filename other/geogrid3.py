@@ -8,6 +8,25 @@ class geogrid(dict):
             coords_float = [round(coords_float[0], 6), round(coords_float[1], 6)]
             coords = [z for z in coords.lstrip("(").rstrip(")").split(",")]
             geonest = self
+
+            if coords_float[0] < 0.0:
+                if "-" not in geonest:
+                    geonest["-"] = {}
+                geonest = geonest.get("-")
+                coords_float[0] = abs(coords_float[0])
+            else:
+                if "+" not in geonest:
+                    geonest["+"] = {}
+                geonest = geonest.get("+")
+            if coords_float[1] < 0.0:
+                if "-" not in geonest:
+                    geonest["-"] = {}
+                coords_float[1] = abs(coords_float[1])
+            else:
+                if "+" not in geonest:
+                    geonest["+"] = {}
+                geonest = geonest.get("+")
+
             temp = [int(round(coords_float[0], -1))/10, int(round(coords_float[1], -1))/10]
             if temp[0] not in geonest:
                 geonest[temp[0]] = {}
@@ -23,11 +42,18 @@ class geogrid(dict):
                 geonest[temp[1]] = {}
             geonest = geonest.get(temp[1])
             for y in range(6):
-                temp = int(coords[0][coords[0].find(".") + y + 1])
+                if len(coords[0][coords[0].find("."):]) - (y + 2) < 0:
+                    temp = 0
+                else:
+                    temp = int(coords[0][coords[0].find(".") + y + 1])
                 if temp not in geonest:
                     geonest[temp] = {}
                 geonest = geonest.get(temp)
-                temp = int(coords[1][coords[1].find(".") + y + 1])
+
+                if len(coords[1][coords[1].find("."):]) - (y + 2) < 0:
+                    temp = 0
+                else:
+                    temp = int(coords[1][coords[1].find(".") + y + 1])
                 if temp not in geonest:
                     geonest[temp] = {}
                 geonest = geonest.get(temp)
@@ -35,7 +61,30 @@ class geogrid(dict):
         coords_float = [float(z) for z in coords.split(",")]
         geonest = self
         res = ["", ""]
-        temp = [int(round(coords_float[0], -1))/10, int(round(coords_float[1], -1))/10]
+
+        if coords_float[0] < 0:
+            geonest = geonest.get("-")
+            coords_float[0] = abs(coords_float[0])
+            res[0] += "-"
+        else:
+            geonest = geonest.get("+")
+        if coords_float[1] < 0:
+            geonest = geonest.get("-")
+            coords_float[1] = abs(coords_float[1])
+            res[0] += "-"
+        else:
+            geonest = geonest.get("+")
+
+
+        if abs(coords_float[0]) < 10 and abs(coords_float[1]) > 10:
+            temp = [0, int(round(coords_float[1], -1))/10]
+        elif abs(coords_float[0]) > 10 and abs(coords_float[1]) < 10:
+            temp = [int(round(coords_float[0], -1))/10, 0]
+        elif abs(coords_float[0]) < 10 and abs(coords_float[1]) < 10:
+            temp = [0, 0]
+        else:
+            temp = [int(round(coords_float[0], -1))/10, int(round(coords_float[1], -1))/10]
+        print temp
         if temp[0] not in geonest:
             temp[0] = min([i for i in geonest], key=lambda x: abs(x-temp[0]))
         geonest = geonest.get(temp[0])
@@ -46,7 +95,7 @@ class geogrid(dict):
         geonest = geonest.get(temp[1])
         res[1] += str(temp[1])
         temp = [int(abs(coords_float[0])) % 10, int(abs(coords_float[1])) % 10]
-
+        print temp
         if temp[0] not in geonest:
             temp[0] = min([i for i in geonest], key=lambda x: abs(x-temp[0]))
         geonest = geonest.get(temp[0])
@@ -89,6 +138,6 @@ grid = json.load(f)
 f.close()
 
 grid2 = geogrid(grid)
-print grid2.nearest("-113.491, 53.584") ## -113.49933499335006, 53.581435814358116
-print grid2.nearest("-0.18, 44.0") ## 0.18180181801798745, 44.101341013410099
+print grid2.nearest("-113.497, 53.583") ## -113.49933499335006, 53.581435814358116
+print grid2.nearest("-0.179, 44.0") ## 0.18180181801798745, 44.101341013410099
 

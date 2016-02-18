@@ -9,9 +9,9 @@ with open("urbanareas1_1.tsv", "rb") as csvfile:
             continue
         grid[unicode(str(i[3])+","+str(i[4]))] = [i[0],i[2],i[6]]
     csvfile.close()
-xstep = 360/1000.0; tempgrid = {}
+xstep = 360/111.1; tempgrid = {}
 
-def gridder(x1, y1, step, div=5):
+def gridder(x1, y1, step, div=3):
     step = step/div; ddense = False
     for i in np.arange(x1 + step/2, x1 + (step*div), step):
         for j in np.arange(y1 + step/2, y1 + (step*div), step):
@@ -23,10 +23,10 @@ def gridder(x1, y1, step, div=5):
                         gridder(i-(step/2), j-(step/2), step)
                         break
                 if not ddense:
-                    tempgrid[(i, j)] = step
+                    tempgrid["({0[0]},{0[1]})".format((i, j))] = step
                 ddense = False
                 continue
-            tempgrid[(i, j)] = step
+            tempgrid["({0[0]},{0[1]})".format((i, j))] = step
    
 dense = False; x = -180.0; y = -90.0
 while x < 179.99:
@@ -37,7 +37,7 @@ while x < 179.99:
                 gridder(x, y, xstep)
                 grid2.update(tempgrid); tempgrid={}; dense = True; break
         if not dense:
-            grid2[(x+(xstep / 2), y+(xstep / 2))] = xstep
+            grid2["({0[0]},{0[1]})".format((x+(xstep / 2), y+(xstep / 2)))] = xstep
         y += xstep
         dense = False
     y = -90
@@ -45,5 +45,5 @@ while x < 179.99:
 
 
 f = open("geogrid.txt", "wb")
-json.dump(grid2, f, ensure_ascii=False)
+json.dump(grid2, f)
 f.close()
