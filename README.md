@@ -1,8 +1,7 @@
 # py_research
 
 -- /geo is directory with code base for locations/places/geocoding methods etc
-diagram for the main workflow can be found on Confluence:
-https://onemcom.atlassian.net/wiki/x/AoAt
+
 
 -- /calc is conversion toolkit based on pint package. additional dictionary entries can be used for shorthands and convensions. Now fully supports fractional units (m^2/s^3)
 
